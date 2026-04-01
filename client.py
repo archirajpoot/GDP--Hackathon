@@ -1,4 +1,3 @@
-
 # ============================================================
 # SafetyGuard X — HTTP Client
 # HTTP client to call the env API
