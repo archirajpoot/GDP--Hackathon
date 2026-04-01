@@ -1,6 +1,6 @@
  
  ---
-title: SafetyGuard X     
+Title: SafetyGuard X     
 emoji: 🛡️   
 colorFrom: red   
 colorTo: blue  
