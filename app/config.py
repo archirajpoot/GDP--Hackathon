@@ -5,7 +5,7 @@
 # ============================================================
 
 
-PROJECT_NAME    = "SafetyGuard X"
+PROJECT_NAME    = "SafetyGuard "
 VERSION         = "1.0.0"
 DESCRIPTION     = (
     "Adversarial AI Safety Stress Testing Environment. "
