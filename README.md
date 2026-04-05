@@ -24,18 +24,18 @@ It supports multi-turn conversations, just like a real safety monitoring system 
 I focused on making the AI fully autonomous while keeping full transparency through the Explainable AI panel.
 
 🛡️ SafetyGuard X
-├── 4 tasks: easy → medium → hard → expert
-├── 5 attack types: direct, encoded, roleplay, emotional, semantic
-├── 6-metric reward function (not binary)
-├── Adaptive adversary (gets harder on agent mistakes)
-├── Full OpenEnv spec: reset/step/state
-├── 8 active safety policies
-├── Beautiful interactive dashboard at /ui
-├── Leaderboard tracking all episodes
-├── /validate endpoint for auto-checker
-├── inference.py with mock agent fallback
-└── Deployed and live on HuggingFace
-
+├── 4 tasks: easy → medium → hard → expert                           
+├── 5 attack types: direct, encoded, roleplay, emotional, semantic   
+├── 6-metric reward function (not binary)                            
+├── Adaptive adversary (gets harder on agent mistakes)              
+├── Full OpenEnv spec: reset/step/state                             
+├── 8 active safety policies                                         
+├── Beautiful interactive dashboard at /ui                           
+├── Leaderboard tracking all episodes                                
+├── /validate endpoint for auto-checker                              
+├── inference.py with mock agent fallback                            
+└── Deployed and live on HuggingFace                                 
+   
 
 ## 🔗 Links
 
