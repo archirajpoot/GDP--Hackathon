@@ -25,6 +25,18 @@ I focused on making the AI fully autonomous while keeping full transparency thro
 ## To Run -  READ LINE NO.235 HERE
 python -m uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload
 
+## 🔗 Links
+
+| Resource | URL |
+|----------|-----|
+| 🤗 HuggingFace Space | https://huggingface.co/spaces/abhishek0164/safetyguard-x |
+| 🎮 Live Dashboard UI | https://abhishek0164-safetyguard-x.hf.space/ui |
+| 📖 API Documentation | https://abhishek0164-safetyguard-x.hf.space/docs |
+| ✅ Health Check | https://abhishek0164-safetyguard-x.hf.space/health |
+| 📋 Tasks List | https://abhishek0164-safetyguard-x.hf.space/tasks |
+| ✔️ Validate | https://abhishek0164-safetyguard-x.hf.space/validate |
+| 🏆 Leaderboard | https://abhishek0164-safetyguard-x.hf.space/leaderboard |
+| 💻 GitHub Repo | https://github.com/abhishek0164/safetyguard-x |
 
 [![OpenEnv](https://img.shields.io/badge/OpenEnv-1.0-blue)](https://openenv.dev)
 [![HuggingFace](https://img.shields.io/badge/🤗-Space-yellow)](https://huggingface.co/spaces)
@@ -236,7 +248,7 @@ hard ~0.61, expert ~0.47
 
 ### Option 1 — Docker (Recommended)
 ```bash
-git clone https://huggingface.co/spaces/YOUR_USERNAME/safetyguard-x
+git clone https://huggingface.co/spaces/abhishek0164/safetyguard-x
 cd safetyguard-x
 docker build -t safetyguard-x .
 docker run -p 7860:7860 safetyguard-x
@@ -247,7 +259,7 @@ Open: http://localhost:7860
 ### Option 2 — Local Python
 ```bash
 # 1. Clone the repo
-git clone https://huggingface.co/spaces/YOUR_USERNAME/safetyguard-x
+git clone https://huggingface.co/spaces/abhishek0164/safetyguard-x
 cd safetyguard-x
 
 # 2. Install dependencies
