@@ -49,22 +49,25 @@ class GraderRequest(BaseModel):
 
 # ── Root → redirect to UI ─────────────────────────────────────
 
-@app.get("/", tags=["meta"])
-def root():
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def root():
+    """Serve the beautiful dashboard directly at root URL"""
+    
+    file_path = "static/index.html"
+    
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    
+    # Fallback if file is missing
     return HTMLResponse(content="""
-<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="refresh" content="0; url=/ui">
-<title>SafetyGuard X</title>
-</head>
-<body style="background:#050b18;color:#00d4ff;font-family:monospace;text-align:center;padding:50px;">
-<h1>🛡️ SafetyGuard X</h1>
-<p>Redirecting to dashboard...</p>
-<p><a href="/ui" style="color:#00ff88;">Click here if not redirected</a></p>
-</body>
-</html>
-""")
+        <h1 style="color:#00d4ff; text-align:center; padding:50px; font-family:monospace;">
+            🛡️ SafetyGuard X<br>
+            <span style="color:#ff3366;">UI file not found</span><br>
+            Please check that static/index.html exists in the repository.
+        </h1>
+    """)
 
 @app.get("/health", tags=["meta"])
 def health():
