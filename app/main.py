@@ -46,117 +46,6 @@ class StepRequest(BaseModel):
 class GraderRequest(BaseModel):
     session_id: str
 
-# ── Root → redirect to UI ─────────────────────────────────────
-
-# @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-# async def root():
-#     # Try multiple possible paths for HF Spaces compatibility
-#     possible_paths = [
-#         "app/static/index.html",
-#         "static/index.html", 
-#         os.path.join(os.path.dirname(__file__), "static", "index.html"),
-#     ]
-    
-#     for path in possible_paths:
-#         if os.path.exists(path):
-#             with open(path, "r", encoding="utf-8") as f:
-#                 return HTMLResponse(content=f.read())
-    
-#     # Final fallback — show working links
-#     return HTMLResponse(content="""
-# <!DOCTYPE html>
-# <html>
-# <head>
-# <title>SafetyGuard X</title>
-# <style>
-# body{background:#050b18;color:#e8f4fd;font-family:monospace;margin:0;padding:40px;text-align:center;}
-# h1{color:#00d4ff;font-size:2rem;margin-bottom:10px;}
-# p{color:#00ff88;margin-bottom:30px;}
-# .links{display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto;}
-# a{display:block;padding:12px 20px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:8px;color:#00d4ff;text-decoration:none;font-size:0.9rem;}
-# a:hover{background:rgba(0,212,255,0.2);}
-# </style>
-# </head>
-# <body>
-# <h1>🛡️ SafetyGuard X</h1>
-# <p>Adversarial AI Safety Stress Testing Environment</p>
-# <div class="links">
-# <a href="/ui">🎮 Open Interactive Dashboard</a>
-# <a href="/docs">📖 API Documentation</a>
-# <a href="/health">✅ Health Check</a>
-# <a href="/tasks">📋 Tasks List</a>
-# <a href="/validate">✔️ Validate</a>
-# <a href="/leaderboard">🏆 Leaderboard</a>
-# </div>
-# </body>
-# </html>
-# """)
-#  grok update 
-
-# # ──────────────────────────────────────────────────────────────
-# # CRITICAL: Mount static folder (CSS/JS will work in /ui)
-# # ──────────────────────────────────────────────────────────────
-# base_dir = os.path.dirname(os.path.abspath(__file__))
-# static_dir = os.path.join(base_dir, "static")
-
-# if not os.path.exists(static_dir):
-#     static_dir = os.path.join(os.path.dirname(base_dir), "static")
-
-# app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-# # ──────────────────────────────────────────────────────────────
-# # ROOT /  →  MUST return JSON for the judge (exactly as before)
-# # ──────────────────────────────────────────────────────────────
-# @app.get("/")
-# async def root():
-#     return {
-#         "environment": "SafetyGuard X",
-#         "version": "1.0.0",
-#         "description": "Adversarial AI Safety Stress Testing Environment. Simulates real-world jailbreak attempts, policy conflicts, and multi-turn adversarial interactions.",
-#         "tasks": [
-#             "easy",
-#             "medium",
-#             "hard",
-#             "expert"
-#         ],
-#         "endpoints": [
-#             "/reset",
-#             "/step",
-#             "/state",
-#             "/tasks",
-#             "/grader",
-#             "/baseline",
-#             "/health",
-#             "/ui"
-#         ]
-#     }
-
-# # ──────────────────────────────────────────────────────────────
-# # /ui  →  serves your full interactive dashboard (for humans/judges)
-# # ──────────────────────────────────────────────────────────────
-# @app.get("/ui", response_class=HTMLResponse, include_in_schema=False)
-# async def ui_dashboard():
-#     # Try all possible locations for index.html on HF
-#     possible_paths = [
-#         os.path.join(static_dir, "index.html"),
-#         os.path.join(base_dir, "static", "index.html"),
-#         "app/static/index.html",
-#         "static/index.html",
-#     ]
-    
-#     for file_path in possible_paths:
-#         if os.path.exists(file_path):
-#             with open(file_path, "r", encoding="utf-8") as f:
-#                 return HTMLResponse(content=f.read())
-    
-#     # Nice fallback if index.html is missing
-#     return HTMLResponse(content="""
-#     <h1 style="color:#00d4ff;text-align:center;margin-top:100px;font-family:monospace;">
-#         🛡️ SafetyGuard X Dashboard<br><br>
-#         <a href="/docs">📖 View API Docs</a>
-#     </h1>
-#     """)
-
 @app.get("/", include_in_schema=False)
 async def root(request: Request):
     # If browser request → show UI
@@ -189,34 +78,65 @@ def health():
     return {"status": "ok", "environment": PROJECT_NAME}
 
 # ── Core OpenEnv Endpoints──────────────────────────────────────────────
+
 @app.post("/reset", response_model=ResetResult, tags=["openenv"])
-def reset(request: ResetRequest):
+async def reset(request: Request):
     try:
-        return env_reset(request.task_id, request.scenario_index)
+        # Handle empty body or missing fields
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        
+        task_id        = body.get("task_id", "easy")
+        scenario_index = int(body.get("scenario_index", 0))
+        
+        return env_reset(task_id, scenario_index)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.post("/step", response_model=StepResult, tags=["openenv"])
-def step(request: StepRequest):
+async def step(request: Request):
     try:
-        return env_step(request.session_id, request.action)
+        body       = await request.json()
+        session_id = body.get("session_id", "")
+        action     = AgentAction(**body.get("action", {"decision":"block","reason":"default"}))
+        
+        if not session_id:
+            raise HTTPException(status_code=422, detail="session_id required")
+        
+        return env_step(session_id, action)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.get("/state", response_model=StateResult, tags=["openenv"])
-def state(session_id: str = Query(...)):
+async def state(request: Request):
     try:
+        # Handle empty body or missing fields (same pattern as /reset and /step)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        
+        session_id = body.get("session_id", "")
+        
+        if not session_id:
+            raise HTTPException(status_code=422, detail="session_id required")
+        
         return env_state(session_id)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/tasks", response_model=List[TaskInfo], tags=["openenv"])
 def tasks():
