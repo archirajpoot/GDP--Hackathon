@@ -188,6 +188,7 @@ def validate():
         "multi_turn":     True,
         "attack_types":   ["direct","semantic_disguise","roleplay_jailbreak","emotional_manip","encoded"],
     }
+    
 
 @app.get("/leaderboard", tags=["openenv"])
 def leaderboard():

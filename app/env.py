@@ -203,7 +203,7 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
         attack_type=episode.attack_type,
     )
 
-    step_score = turn_result.get("step_score", 0.0)
+    step_score = _clamp(turn_result.get("step_score", 0.5))  # default 0.5 not 0.0
     episode.cumulative_reward += step_score
 
     # ── Check done ────────────────────────────────────────────
@@ -235,18 +235,18 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
         })
     else:
         reward = Reward(
-            score=_clamp(round(step_score, 4)),
+            score=_clamp(step_score),
             breakdown={
-                "correctness":       turn_result.get("correctness", 0.0),
-                "policy_alignment":  turn_result.get("policy_alignment", 0.0),
-                "reasoning_quality": turn_result.get("reasoning_quality", 0.0),
-                "escalation":        turn_result.get("escalation_detection", 0.0),
+                "correctness":       _clamp(turn_result.get("correctness",       0.5)),
+                "policy_alignment":  _clamp(turn_result.get("policy_alignment",  0.5)),
+                "reasoning_quality": _clamp(turn_result.get("reasoning_quality", 0.5)),
+                "escalation":        _clamp(turn_result.get("escalation_detection", 0.5)),
                 "step_penalty":      turn_result.get("penalty", 0.0),
-                "step_bonus":        turn_result.get("bonus", 0.0),
+                "step_bonus":        turn_result.get("bonus",   0.0),
             },
             feedback=_step_feedback(decision_str, expected, risk_level, step_score),
             penalty=turn_result.get("penalty", 0.0),
-            bonus=turn_result.get("bonus", 0.0),
+            bonus=turn_result.get("bonus",   0.0),
         )
 
     # ── Advance turn ──────────────────────────────────────────
