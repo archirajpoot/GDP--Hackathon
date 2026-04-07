@@ -7,11 +7,9 @@ from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from fastapi.responses import HTMLResponse 
-
 
 from app.config import PROJECT_NAME, VERSION, DESCRIPTION
 from app.models import AgentAction, ResetResult, StepResult, StateResult, TaskInfo
@@ -48,7 +46,6 @@ class GraderRequest(BaseModel):
 
 @app.get("/", include_in_schema=False)
 async def root(request: Request):
-    # If browser request → show UI
     accept = request.headers.get("accept", "")
     if "text/html" in accept:
         paths = [
@@ -59,8 +56,6 @@ async def root(request: Request):
             if os.path.exists(p):
                 with open(p, "r", encoding="utf-8") as f:
                     return HTMLResponse(content=f.read())
-    
-    # API client / judge → return JSON
     return {
         "environment":  PROJECT_NAME,
         "version":      VERSION,
@@ -77,59 +72,39 @@ async def root(request: Request):
 def health():
     return {"status": "ok", "environment": PROJECT_NAME}
 
-# ── Core OpenEnv Endpoints──────────────────────────────────────────────
+# ── Core OpenEnv Endpoints ────────────────────────────────────
+# NO response_model — the validator sends {} and strict models break it
 
-@app.post("/reset", response_model=ResetResult, tags=["openenv"])
+@app.post("/reset", tags=["openenv"])
 async def reset(request: Request):
     try:
-        # Handle empty body or missing fields
         try:
             body = await request.json()
         except Exception:
             body = {}
-        
-        task_id        = body.get("task_id", "easy")
+        task_id        = str(body.get("task_id", "easy"))
         scenario_index = int(body.get("scenario_index", 0))
-        
         return env_reset(task_id, scenario_index)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/step", response_model=StepResult, tags=["openenv"])
+
+@app.post("/step", tags=["openenv"])
 async def step(request: Request):
     try:
-        body       = await request.json()
-        session_id = body.get("session_id", "")
-        action     = AgentAction(**body.get("action", {"decision":"block","reason":"default"}))
-        
-        if not session_id:
-            raise HTTPException(status_code=422, detail="session_id required")
-        
-        return env_step(session_id, action)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.get("/state", response_model=StateResult, tags=["openenv"])
-async def state(request: Request):
-    try:
-        # Handle empty body or missing fields (same pattern as /reset and /step)
         try:
             body = await request.json()
         except Exception:
             body = {}
-        
         session_id = body.get("session_id", "")
-        
+        action_data = body.get("action", {"decision": "block", "reason": "default safety block", "confidence": 0.8})
         if not session_id:
             raise HTTPException(status_code=422, detail="session_id required")
-        
-        return env_state(session_id)
+        action = AgentAction(**action_data)
+        return env_step(session_id, action)
+    except HTTPException:
+        raise
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
@@ -137,8 +112,35 @@ async def state(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Support BOTH POST and GET for /state — validator uses POST
+@app.post("/state", tags=["openenv"])
+async def state_post(request: Request):
+    try:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        session_id = body.get("session_id", "")
+        if not session_id:
+            raise HTTPException(status_code=422, detail="session_id required")
+        return env_state(session_id)
+    except HTTPException:
+        raise
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/tasks", response_model=List[TaskInfo], tags=["openenv"])
+@app.get("/state", tags=["openenv"])
+async def state_get(session_id: str = Query(...)):
+    try:
+        return env_state(session_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/tasks", tags=["openenv"])
 def tasks():
     try:
         return list_all_tasks()
@@ -146,9 +148,18 @@ def tasks():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/grader", tags=["openenv"])
-def grader(request: GraderRequest):
+async def grader(request: Request):
     try:
-        return env_grader(request.session_id)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        session_id = body.get("session_id", "")
+        if not session_id:
+            raise HTTPException(status_code=422, detail="session_id required")
+        return env_grader(session_id)
+    except HTTPException:
+        raise
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
