@@ -12,7 +12,7 @@ from app.models import (
 )
 from app.policies import evaluate_query, get_policies_for_task
 from app.memory import MemoryEngine
-from app.grader import Grader
+from app.grader import Grader, _clamp
 from app.tasks import get_scenario, get_turn, get_task_metadata
 
 # ── Session Store ─────────────────────────────────────────────
@@ -218,7 +218,7 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
     if done:
         final = episode.grader.final_score(episode.memory)
         reward = Reward(
-            score=final["final_score"],
+            score=_clamp(final["final_score"]),
             breakdown=final["breakdown"],
             feedback=final["feedback"],
             penalty=final["breakdown"].get("total_penalty", 0.0),
@@ -235,7 +235,7 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
         })
     else:
         reward = Reward(
-            score=round(step_score, 4),
+            score=_clamp(round(step_score, 4)),
             breakdown={
                 "correctness":       turn_result.get("correctness", 0.0),
                 "policy_alignment":  turn_result.get("policy_alignment", 0.0),
