@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from app.grader import _clamp
 from app.config import PROJECT_NAME, VERSION, DESCRIPTION
 from app.models import AgentAction, ResetResult, StepResult, StateResult, TaskInfo
 from app.env import env_reset, env_step, env_state, env_grader, _leaderboard
@@ -43,6 +44,13 @@ class StepRequest(BaseModel):
 
 class GraderRequest(BaseModel):
     session_id: str
+
+class StepResponse(BaseModel):
+    reward: dict   # or Reward model
+    ...
+    def model_post_init(self):
+        if isinstance(self.reward, dict) and "score" in self.reward:
+            self.reward["score"] = _clamp(self.reward["score"])    
 
 @app.get("/", include_in_schema=False)
 async def root(request: Request):
