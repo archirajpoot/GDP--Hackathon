@@ -155,7 +155,7 @@ class Grader:
 
         feedback = self._build_feedback(final, breakdown, feedback_parts, summary)
         return {
-            "final_score": round(final, 4),
+            "final_score": final,
             "breakdown":   breakdown,
             "feedback":    feedback,
         }

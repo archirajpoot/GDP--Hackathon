@@ -1,6 +1,15 @@
 from pydantic import BaseModel, field_validator, model_validator
 from typing import Optional, List, Dict, Any
 from enum import Enum
+import math 
+
+
+# ── Score clamp helper ────────────────────────────────────────────────────────
+def _clamp_score(v: float) -> float:
+    """Force any float into strictly open interval (0.01, 0.99)."""
+    if not math.isfinite(float(v)):
+        return 0.01
+    return max(0.01, min(0.99, round(float(v), 4)))
 
 
 class Decision(str, Enum):
@@ -109,26 +118,52 @@ class Observation(BaseModel):
 
     model_config = {"use_enum_values": True}
 
-i   
+
+# class Reward(BaseModel):
+#     score:     float
+#     breakdown: Dict[str, float]
+#     feedback:  str
+#     penalty:   float = 0.0
+#     bonus:     float = 0.0
+    
+#     @field_validator("score", mode="before")
+#     @classmethod
+#     def clamp_score(cls, v):
+#         return max(0.01, min(0.99, round(float(v), 4)))
+#     # ← ADD THIS FOR breakdown dict values
+#     @field_validator("breakdown", mode="before")
+#     @classmethod
+#     def clamp_breakdown(cls, v):
+#         if isinstance(v, dict):
+#             return {k: max(0.01, min(0.99, round(float(val), 4))) 
+#                     for k, val in v.items()}
+#         return v
+
 class Reward(BaseModel):
     score:     float
-    breakdown: Dict[str, float]
-    feedback:  str
-    penalty:   float = 0.0
-    bonus:     float = 0.0
-    
+    breakdown: Dict[str, float] = {}
+    feedback:  str = ""
+
     @field_validator("score", mode="before")
     @classmethod
     def clamp_score(cls, v):
-        return max(0.01, min(0.99, round(float(v), 4)))
-    # ← ADD THIS FOR breakdown dict values
+        """score must always be strictly in (0.01, 0.99)."""
+        return _clamp_score(float(v))
+
     @field_validator("breakdown", mode="before")
     @classmethod
     def clamp_breakdown(cls, v):
-        if isinstance(v, dict):
-            return {k: max(0.01, min(0.99, round(float(val), 4))) 
-                    for k, val in v.items()}
-        return v
+        """
+        Clamp EVERY float in breakdown to (0.01, 0.99).
+        The openenv Phase 2 validator checks ALL float values in the
+        reward response recursively — including breakdown values.
+        Exact 0.0 and 1.0 cause 'score out of range' failures.
+        """
+        if not isinstance(v, dict):
+            return {}
+        return {k: _clamp_score(float(val)) for k, val in v.items()}
+
+    model_config = {"use_enum_values": True}
 
 
 class StepResult(BaseModel):
