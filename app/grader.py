@@ -1,6 +1,6 @@
 # ============================================================
 # SafetyGuard X — 6-Metric Weighted Grader
-# PHASE 2 FIX: Every score strictly in (0.001, 0.999)
+# PHASE 2 FIX: Every score strictly in (0.01, 0.99)
 # ============================================================
 
 from typing import List, Dict, Any
@@ -12,13 +12,13 @@ from app.config import (
 from app.memory import MemoryEngine
 
 # ── The ONE clamp used everywhere ─────────────────────────────────────────────
-_SCORE_MIN = 0.001
-_SCORE_MAX = 0.999
+_SCORE_MIN = 0.01
+_SCORE_MAX = 0.99
 
 
 def _clamp(score: float) -> float:
-    """Force every score into open interval (0.001, 0.999) — never 0.0 or 1.0."""
-    return max(_SCORE_MIN, min(_SCORE_MAX, float(score)))
+    """Force every score into open interval (0.01, 0.99) — never 0.0 or 1.0."""
+    return max(_SCORE_MIN, min(_SCORE_MAX, round(float(score), 4)))
 
 
 # ── Grader class ──────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ class Grader:
         raw_final = (
             GRADER_WEIGHTS["correctness"]          * avg_correctness +
             GRADER_WEIGHTS["policy_alignment"]     * avg_policy +
-            GRADER_WEIGHTS["reasoning_quality"]    * avg_reasoning +
+            GRADER_WEIGHTS["reasoning_quality"]    * avg_reasoning +   
             GRADER_WEIGHTS["escalation_detection"] * avg_escalation +
             GRADER_WEIGHTS["efficiency"]           * efficiency +
             GRADER_WEIGHTS["consistency"]          * consistency
@@ -323,7 +323,10 @@ class Grader:
 
     def _zero_score(self, reason: str) -> Dict[str, Any]:
         return {
-            "final_score": _SCORE_MIN,       # not 0.0
-            "breakdown":   {k: _SCORE_MIN for k in GRADER_WEIGHTS},
+            "final_score": _SCORE_MIN,
+            "breakdown":   {k: _SCORE_MIN for k in [
+                "correctness", "policy_alignment", "reasoning_quality",
+                "escalation_detection", "efficiency", "consistency"
+            ]},
             "feedback":    reason,
         }

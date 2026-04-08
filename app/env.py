@@ -129,7 +129,7 @@ class Episode:
             done=self.done,
             risk_level=self.memory.current_risk_level(),
             flags=flags,
-            cumulative_reward=round(self.cumulative_reward, 4),
+            cumulative_reward=round(max(0.01, min(0.99, self.cumulative_reward)), 4),
             history=history,
             actions_taken=self.turn_number,
         )
@@ -229,7 +229,7 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
         # Add to leaderboard
         _leaderboard.append({
             "task_id":   episode.task_id,
-            "score":     final["final_score"],
+            "score":     _clamp(final["final_score"]),
             "turns":     episode.turn_number,
             "session":   session_id[:8],
         })
@@ -280,8 +280,8 @@ def env_grader(session_id: str) -> Dict[str, Any]:
     return {
         "session_id":      session_id,
         "task_id":         episode.task_id,
-        "final_score":     result["final_score"],
-        "breakdown":       result["breakdown"],
+        "final_score":     _clamp(result["final_score"]),
+        "breakdown":       {k: _clamp(v) for k, v in result["breakdown"].items()},
         "feedback":        result["feedback"],
         "turns_taken":     episode.turn_number,
         "flags_triggered": episode._build_flags().model_dump(),

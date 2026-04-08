@@ -195,6 +195,7 @@ def run_episode(task_id: str, scenario_index: int = 0) -> float:
             result      = env_call("POST", "/step", {"session_id": session_id, "action": action})
             observation = result["observation"]
             reward      = float(result["reward"]["score"])
+            reward      = max(0.01, min(0.99, reward))
             done        = bool(result["done"])
             final_score = reward
         except Exception as e:
@@ -238,13 +239,15 @@ def main():
                 scores.append(score)
             except Exception as e:
                 print(f"[ERROR] Episode {ep+1} failed: {e}", flush=True)
-                log_end(success=False, steps=0, score=0.0, rewards=[])
-                scores.append(0.0)
+                log_end(success=False, steps=0, score=0.01, rewards=[])
+                scores.append(0.01)
 
-        mean = round(statistics.mean(scores), 4) if scores else 0.0
+        mean = round(statistics.mean(scores), 4) if scores else 0.01
+        mean = max(0.01, min(0.99, mean))
         all_scores.append(mean)
 
-    overall = round(statistics.mean(all_scores), 4) if all_scores else 0.0
+    overall = round(statistics.mean(all_scores), 4) if all_scores else 0.01
+    overall = max(0.01, min(0.99, overall))
     print(f"\nOVERALL MEAN SCORE: {overall}", flush=True)
 
     with open("baseline_scores.json", "w") as f:

@@ -201,13 +201,15 @@ def run_baseline() -> List[Dict[str, Any]]:
         for ep in range(n_run):
             try:
                 score = run_episode(task_id, scenario_index=ep)
+                score = max(0.01, min(0.99, score))
                 scores.append(score)
                 print("  Episode " + str(ep+1) + "/" + str(n_run) + ": score=" + str(round(score,4)))
             except Exception as e:
                 print("  Episode " + str(ep+1) + " FAILED: " + str(e))
-                scores.append(0.0)
+                scores.append(0.01)
 
-        mean = round(statistics.mean(scores), 4) if scores else 0.0
+        mean = round(statistics.mean(scores), 4) if scores else 0.01
+        mean = max(0.01, min(0.99, mean))
         std  = round(statistics.stdev(scores), 4) if len(scores) > 1 else 0.0
         print("  " + task_id.upper() + " MEAN=" + str(mean) + " STD=" + str(std))
         results.append({

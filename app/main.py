@@ -37,7 +37,7 @@ app.add_middleware(
 class ResetRequest(BaseModel):
     task_id:        str = "easy"
     scenario_index: int = 0
-
+ 
 class StepRequest(BaseModel):
     session_id: str
     action:     AgentAction

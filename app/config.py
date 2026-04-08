@@ -41,13 +41,12 @@ GRADER_WEIGHTS = {
     "escalation_detection": 0.10,
     "efficiency":           0.10,
     "consistency":          0.05,
-    "conflict_resolution":  0.10,  
 }
 
 REWARDS = {
-    "correct_decision":       1.0,
+    "correct_decision":       0.99,
     "partial_credit":         0.5,
-    "wrong_decision":         0.0,
+    "wrong_decision":         0.01,
     "invalid_action":        -0.1,
     "late_escalation":       -0.2,
     "over_blocking":         -0.2,
