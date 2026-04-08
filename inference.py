@@ -292,9 +292,10 @@ import urllib.request
 from typing import Optional, List
 
 # ── Required environment variables ───────────────────────────
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.environ.get("MODEL_NAME",   "gpt-4o-mini")
 HF_TOKEN     = os.environ.get("HF_TOKEN",     os.environ.get("OPENAI_API_KEY", ""))
+LOCAL_IMAGE_NAME = os.environ.get("LOCAL_IMAGE_NAME", "safetyguard-x") # HF/Docker image name
 ENV_URL      = os.environ.get("ENV_BASE_URL", "http://localhost:7860")
 
 TEMPERATURE = 0.0
@@ -334,17 +335,17 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
     error_val = error if error else "null"
     done_val  = str(done).lower()
     safe_reward = _clamp(reward)
-    print(f"[STEP] step={step} action={action} reward={safe_reward:.4f} done={done_val} error={error_val}", flush=True)
+    print(f"[STEP] step={step} action={action} reward={safe_reward:.2f} done={done_val} error={error_val}", flush=True)
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    # Use 4dp so score=0.994 → "0.9940", not "0.99" → safe; and never "1.00"/"0.00"
+    # Use 2dp as per mandatory spec example
     safe_score   = _clamp(score)
     safe_rewards = [_clamp(r) for r in rewards] if rewards else [0.01]
-    rewards_str  = ",".join(f"{r:.4f}" for r in safe_rewards)
+    rewards_str  = ",".join(f"{r:.2f}" for r in safe_rewards)
     success_val  = str(success).lower()
     print(
         f"[END] success={success_val} steps={steps} "
-        f"score={safe_score:.4f} rewards={rewards_str}",
+        f"score={safe_score:.2f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -568,6 +569,7 @@ def _main_inner():
             "tasks":   dict(zip(TASK_IDS, all_scores))
         }, f, indent=2)
     print("Saved to baseline_scores.json", flush=True)
+    
 
 
 if __name__ == "__main__":
