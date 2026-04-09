@@ -9,6 +9,12 @@ import json
 from typing import Optional
 
 BASE_URL = "http://localhost:7860"
+def _fmt3(v: float) -> str:
+    try:
+        return f"{float(v):.3f}"
+    except Exception:
+        return str(v)
+
 
 # ── HTTP Helpers ──────────────────────────────────────────────
 
@@ -142,7 +148,7 @@ def take_step(
         next_query = "✅ Episode Complete"
         status = (
             "🏁 DONE | Final Score: " +
-            str(round(reward["score"], 3)) +
+            _fmt3(reward["score"]) +
             " | " + reward.get("feedback", "")[:80]
         )
         final_score = _format_final_score(reward)
@@ -152,7 +158,7 @@ def take_step(
         max_turns  = obs["max_turns"]
         status = (
             "▶️ Turn " + str(turn) + "/" + str(max_turns) +
-            " | Last score: " + str(round(reward["score"], 3)) +
+            " | Last score: " + _fmt3(reward["score"]) +
             " | Expected: " + info.get("expected", "?")
         )
         final_score = ""
@@ -186,7 +192,7 @@ def get_grader_score(session_id: str):
     breakdown = result.get("breakdown", {})
     for key, val in breakdown.items():
         bar   = _score_bar(float(val))
-        lines.append(bar + " **" + key + "**: " + str(round(float(val), 3)))
+        lines.append(bar + " **" + key + "**: " + _fmt3(float(val)))
 
     lines.append("")
     lines.append("### Feedback")
@@ -237,18 +243,18 @@ def _format_history(history: list) -> str:
 
 
 def _format_reward(reward: dict) -> str:
-    lines = ["### Step Reward: " + str(round(reward["score"], 3))]
+    lines = ["### Step Reward: " + _fmt3(reward["score"])]
     breakdown = reward.get("breakdown", {})
     for key, val in breakdown.items():
         try:
             bar = _score_bar(float(val))
-            lines.append(bar + " " + key + ": " + str(round(float(val), 3)))
+            lines.append(bar + " " + key + ": " + _fmt3(float(val)))
         except Exception:
             lines.append(key + ": " + str(val))
     if reward.get("penalty", 0) > 0:
-        lines.append("⚠️ Penalty: -" + str(round(reward["penalty"], 3)))
+        lines.append("⚠️ Penalty: -" + _fmt3(reward["penalty"]))
     if reward.get("bonus", 0) > 0:
-        lines.append("🎁 Bonus: +" + str(round(reward["bonus"], 3)))
+        lines.append("🎁 Bonus: +" + _fmt3(reward["bonus"]))
     return "\n".join(lines)
 
 
@@ -267,7 +273,7 @@ def _format_final_score(reward: dict) -> str:
 
     return (
         grade + "\n" +
-        "**Final Score: " + str(round(score, 3)) + "**\n\n" +
+        "**Final Score: " + _fmt3(score) + "**\n\n" +
         reward.get("feedback", "")
     )
 

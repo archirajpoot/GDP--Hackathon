@@ -11,8 +11,8 @@ def _clamp_score(v: float) -> float:
         f = float(v)
         if not math.isfinite(f):
             return 0.5
-        # Round to 4dp and clamp to [0.01, 0.99]
-        val = round(f, 4)
+        # Keep 4-decimal precision with formatting
+        val = float(f"{f:.4f}")
         if val <= 0.01: return 0.01
         if val >= 0.99: return 0.99
         return val
@@ -142,13 +142,13 @@ class Observation(BaseModel):
 #     @field_validator("score", mode="before")
 #     @classmethod
 #     def clamp_score(cls, v):
-#         return max(0.01, min(0.99, round(float(v), 4)))
+#         return max(0.01, min(0.99, float(f"{float(v):.4f}")))
 #     # ← ADD THIS FOR breakdown dict values
 #     @field_validator("breakdown", mode="before")
 #     @classmethod
 #     def clamp_breakdown(cls, v):
 #         if isinstance(v, dict):
-#             return {k: max(0.01, min(0.99, round(float(val), 4))) 
+#             return {k: max(0.01, min(0.99, float(f"{float(val):.4f}"))) 
 #                     for k, val in v.items()}
 #         return v
 

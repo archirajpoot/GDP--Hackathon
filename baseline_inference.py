@@ -14,12 +14,19 @@ import urllib.error
 from typing import Any, Dict, List, Optional
 
 # ── Score clamp helper ────────────────────────────────────────
+def _to_4dp(v: float) -> float:
+    try:
+        return float(f"{float(v):.4f}")
+    except (TypeError, ValueError):
+        return 0.5
+
+
 def _clamp(v: float) -> float:
     """Force any float into strictly open interval (0.01, 0.99)."""
     try:
         f = float(v)
         if not math.isfinite(f): return 0.5
-        val = round(f, 4)
+        val = _to_4dp(f)
         if val <= 0.01: return 0.01
         if val >= 0.99: return 0.99
         return val
@@ -218,12 +225,12 @@ def run_baseline() -> List[Dict[str, Any]]:
                 score = run_episode(task_id, scenario_index=ep)
                 score = max(0.01, min(0.99, score))
                 scores.append(score)
-                print("  Episode " + str(ep+1) + "/" + str(n_run) + ": score=" + str(round(score,4)))
+                print("  Episode " + str(ep+1) + "/" + str(n_run) + ": score=" + f"{_to_4dp(score)}")
             except Exception as e:
                 print("  Episode " + str(ep+1) + " FAILED: " + str(e))
                 scores.append(0.01)
 
-        mean = round(statistics.mean(scores), 4) if scores else 0.5
+        mean = _to_4dp(statistics.mean(scores)) if scores else 0.5
         mean = max(0.01, min(0.99, mean))
         # std_score is intentionally EXCLUDED — a value of 0.0 would be flagged
         # by the OpenEnv recursive float validator as an out-of-range score.
@@ -244,7 +251,7 @@ if __name__ == "__main__":
     print("=" * 50)
 
     all_results = run_baseline()
-    overall = round(statistics.mean(r["mean_score"] for r in all_results), 4) if all_results else 0.5
+    overall = _to_4dp(statistics.mean(r["mean_score"] for r in all_results)) if all_results else 0.5
     overall = max(0.01, min(0.99, overall))
 
     print("\n" + "=" * 50)

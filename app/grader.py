@@ -24,7 +24,7 @@ def _clamp(score: float) -> float:
     try:
         f = float(score)
         if not math.isfinite(f): return 0.5
-        val = round(f, 4)
+        val = float(f"{f:.4f}")
         if val <= _SCORE_MIN: return _SCORE_MIN
         if val >= _SCORE_MAX: return _SCORE_MAX
         return val

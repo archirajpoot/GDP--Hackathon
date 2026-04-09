@@ -75,7 +75,7 @@ class SafetyGuardXEnv:
         url = f"{self.base_url}/grader"
         body = {"session_id": self.session_id}
         resp = self._call("POST", url, body)
-        return float(resp.get("final_score", 0.5))
+        return _clamp(resp.get("final_score", 0.5))
 
     def _call(self, method: str, url: str, body: dict) -> dict:
         data = json.dumps(body).encode("utf-8")
