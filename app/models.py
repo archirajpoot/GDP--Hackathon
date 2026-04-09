@@ -203,7 +203,7 @@ class TaskInfo(BaseModel):
     max_turns:     int
     num_scenarios: int
     has_grader:    bool = True
-    grader:        str = "app.grader.Grader"
+    grader:        str = "graders:policy_grader"
     capabilities:  List[str] = ["grader", "multi_turn"]
     action_schema: Dict[str, Any]
 

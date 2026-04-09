@@ -78,7 +78,69 @@ async def root(request: Request):
 
 @app.get("/health", tags=["meta"])
 def health():
-    return {"status": "ok", "environment": PROJECT_NAME}
+    return {
+        "status":      "healthy",
+        "environment": PROJECT_NAME,
+        "version":     VERSION
+    }
+
+
+@app.get("/metadata", tags=["openenv"])
+def get_metadata():
+    return {
+        "name":        PROJECT_NAME,
+        "description": DESCRIPTION,
+        "version":     VERSION,
+        "author":      "SafetyGuard X Team",
+        "license":     "MIT"
+    }
+
+
+@app.get("/schema", tags=["openenv"])
+def get_schema():
+    # Return structured schemas for action/observation/state.
+    # These match the openenv.yaml definitions.
+    return {
+        "action": {
+            "type": "object",
+            "properties": {
+                "decision": {"type": "string", "enum": ["allow", "block", "modify", "escalate", "clarify"]},
+                "reason": {"type": "string", "min_length": 10},
+                "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+            },
+            "required": ["decision", "reason"]
+        },
+        "observation": {
+            "type": "object",
+            "properties": {
+                "task_id": {"type": "string"},
+                "turn_number": {"type": "integer"},
+                "current_query": {"type": "string"},
+                "risk_level": {"type": "integer"}
+            }
+        },
+        "state": {
+            "type": "object",
+            "properties": {
+                "session_id": {"type": "string"},
+                "done": {"type": "boolean"},
+                "turn_number": {"type": "integer"}
+            }
+        }
+    }
+
+
+@app.post("/mcp", tags=["openenv"])
+def post_mcp():
+    # Stub for MCP endpoint
+    return {
+        "jsonrpc": "2.0",
+        "result": {
+            "status": "active",
+            "capabilities": ["multi_turn", "grader"]
+        },
+        "id": 1
+    }
 
 # ── Core OpenEnv Endpoints ────────────────────────────────────
 # NO response_model — the validator sends {} and strict models break it
@@ -190,15 +252,23 @@ def baseline():
 @app.get("/validate", tags=["openenv"])
 def validate():
     return {
-        "name":           "safetyguard-x",
-        "version":        "1.0.0",
-        "spec_compliant": True,
-        "tasks":          ["easy", "medium", "hard", "expert"],
-        "endpoints":      ["/reset","/step","/state","/tasks","/grader","/baseline","/leaderboard"],
-        "reward_range":   [0.01, 0.99],
-        "deterministic":  True,
-        "multi_turn":     True,
-        "attack_types":   ["direct","semantic_disguise","roleplay_jailbreak","emotional_manip","encoded"],
+        "name":               PROJECT_NAME,
+        "version":            VERSION,
+        "spec_compliant":     True,
+        "tasks":              [t.model_dump() for t in list_all_tasks()],
+        "tasks_with_graders": ["easy", "medium", "hard", "expert"],
+        "graders": {
+            "easy":   "graders:policy_grader",
+            "medium": "graders:policy_grader",
+            "hard":   "graders:policy_grader",
+            "expert": "graders:policy_grader"
+        },
+        "endpoints":          ["/reset","/step","/state","/tasks","/grader","/baseline","/leaderboard", "/metadata", "/schema", "/mcp"],
+        "reward_range":       [0.01, 0.99],
+        "deterministic":      True,
+        "multi_turn":         True,
+        "capabilities":       ["multi_turn", "grader"],
+        "attack_types":       ["direct","semantic_disguise","roleplay_jailbreak","emotional_manip","encoded"],
     }
 
 @app.get("/leaderboard", tags=["openenv"])
