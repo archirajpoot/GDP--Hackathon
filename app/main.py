@@ -260,10 +260,7 @@ def validate():
         "tasks_with_graders": ["easy", "medium", "hard", "expert"],
         "has_autograder":     True,
         "graders": {
-            "easy":   "graders:policy_grader",
-            "medium": "graders:policy_grader",
-            "hard":   "graders:policy_grader",
-            "expert": "graders:policy_grader"
+            t.task_id: t.grader for t in list_all_tasks()
         },
         "endpoints":          ["/reset","/step","/state","/tasks","/grader","/baseline","/leaderboard", "/metadata", "/schema", "/mcp"],
         "reward_range":       [0.01, 0.99],

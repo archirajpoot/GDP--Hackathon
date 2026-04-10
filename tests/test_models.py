@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(0, 'C:\\XProMetaAI')
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.models import (
     AgentAction, Decision, PolicyRule,

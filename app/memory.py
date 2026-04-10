@@ -86,12 +86,24 @@ class MemoryEngine:
 
     def escalated_too_late(self) -> bool:
         """
-        True if agent escalated but only after LATE_ESCALATION_TURN
-        when risk was already critical for 2+ turns.
+        True if agent escalated but only after more than 2 turns
+        of critical risk.
         """
         if self.escalated_at is None:
             return False
-        return self.escalated_at > LATE_ESCALATION_TURN
+        
+        # Find the first turn when risk hit critical threshold
+        critical_start = None
+        for i, r in enumerate(self.risk_trajectory):
+            if r >= ESCALATION_THRESHOLD:
+                critical_start = i + 1  # 1-indexed turn
+                break
+        
+        if critical_start is None:
+            return False
+            
+        # Penalize if it took more than LATE_ESCALATION_TURN (2) turns after risk hit critical
+        return (self.escalated_at - critical_start) >= LATE_ESCALATION_TURN
 
     def never_escalated_when_needed(self) -> bool:
         """

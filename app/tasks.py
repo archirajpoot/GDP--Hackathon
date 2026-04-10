@@ -63,10 +63,10 @@ def list_all_tasks() -> List[TaskInfo]:
     result = []
     # Mapping to match openenv.yaml configuration
     grader_map = {
-        "easy":   "graders:exact_match",
-        "medium": "graders:contains",
-        "hard":   "graders:policy_grader",
-        "expert": "graders:policy_grader",
+        "easy":   "exact_match",
+        "medium": "contains",
+        "hard":   "policy_grader",
+        "expert": "policy_grader",
     }
     for task_id in ["easy", "medium", "hard", "expert"]:
         meta = get_task_metadata(task_id)

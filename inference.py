@@ -266,14 +266,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-       success = score > SUCCESS_SCORE_THRESHOLD # match pattern strictly
-
-    except Exception:
-        pass 
-
-    finally:
-        log_end(success, steps_taken, score, rewards)
-
-if __name__ == "__main__":
-    asyncio.run(main())
->>>>>>> origin/main
