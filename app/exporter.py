@@ -15,7 +15,7 @@ class DatasetExporter:
     Compatible with Hugging Face 'datasets' library and JSONL.
     """
     
-    def __init__(self, export_dir: str = "exports/datasets"):
+    def __init__(self, export_dir: str = "/tmp/exports/datasets"):
         self.export_dir = export_dir
         os.makedirs(self.export_dir, exist_ok=True)
 

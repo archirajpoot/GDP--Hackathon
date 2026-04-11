@@ -133,7 +133,7 @@ def run_training(episodes: int = 500, task_id: str = "expert", on_episode_end=No
     model.learn(total_timesteps=episodes * 10, callback=callback) # Assuming avg 10 steps per episode
 
     # Save Model
-    model_path = "exports/models/safety_ppo_expert"
+    model_path = "/tmp/exports/models/safety_ppo_expert"
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     model.save(model_path)
     print(f"✅ Model saved: {model_path}")
