@@ -1,5 +1,5 @@
-import sys, math
-sys.path.insert(0, '.')
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.env import env_reset, env_step, env_grader
 from app.models import AgentAction
