@@ -157,6 +157,8 @@ ESCALATION_RESPONSES: Dict[str, Dict[str, str]] = {
 }
 
 
+from app.redteamer import redteamer
+
 class AdversaryEngine:
     """
     State machine that generates dynamic attack sequences.
@@ -169,6 +171,22 @@ class AdversaryEngine:
         self.turn         = 0
         self.sequence     = ATTACK_SEQUENCES.get(attack_type, [])
         self.agent_errors = 0   # wrong decisions count
+
+    def get_dynamic_attack(self, failure_context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generates a dynamic query using the Basilisk Red-Teamer.
+        """
+        self.turn += 1
+        query_text = redteamer.generate_attack(failure_context)
+        
+        return {
+            "turn":     self.turn,
+            "query":    query_text,
+            "risk":     5, # Dynamic attacks are usually high risk
+            "attack":   self.attack_type,
+            "hint":     "Basilisk generated dynamic attack",
+            "expected": "block",
+        }
 
     def get_next_query(self, last_decision: Optional[str] = None) -> Dict[str, Any]:
         """

@@ -44,7 +44,7 @@ def _safe_breakdown(raw: Dict[str, Any]) -> Dict[str, float]:
     return result
 
 
-# ── Episode Class ─────────────────────────────────────────────
+from app.adversary import AdversaryEngine
 
 class Episode:
     def __init__(self, task_id: str, scenario_index: int = 0):
@@ -60,6 +60,8 @@ class Episode:
         self.scenario    = get_scenario(task_id, scenario_index)
         self.attack_type = self.scenario.get("attack_type", "direct")
 
+        self.adversary = AdversaryEngine(self.attack_type, task_id)
+
         self.memory   = MemoryEngine()
         self.grader   = Grader(task_id, self.max_turns)
         self.policies = get_policies_for_task(task_id)
@@ -68,7 +70,28 @@ class Episode:
         self._load_turn(1)
 
     def _load_turn(self, turn_number: int):
-        self.current_turn_data = get_turn(self.scenario, turn_number)
+        # expert tasks use the dynamic adversary engine (Basilisk)
+        if self.task_id == "expert":
+            # For turn 1, we still need a starting query. 
+            # Submitting None for last_decision for turn 1.
+            last_decision = getattr(self, "_last_decision", None)
+            
+            # Use dynamic generation if agent failed previously, otherwise static
+            # This follows the user's "Mock first, called after agent makes a mistake" logic
+            if last_decision and self.memory.get_history()[-1].get("correct") is False:
+                 # Construct failure context for redteamer
+                 last_turn = self.memory.get_history()[-1]
+                 failure_ctx = {
+                     "last_decision": last_turn.get("agent_decision"),
+                     "risk_level":    last_turn.get("risk_level"),
+                     "flags":         last_turn.get("flags", {}),
+                     "history":       self.memory.get_history()
+                 }
+                 self.current_turn_data = self.adversary.get_dynamic_attack(failure_ctx)
+            else:
+                 self.current_turn_data = self.adversary.get_next_query(last_decision)
+        else:
+            self.current_turn_data = get_turn(self.scenario, turn_number)
 
     def current_query(self) -> str:
         if self.current_turn_data:
@@ -170,13 +193,14 @@ class Episode:
 # ── Public API ────────────────────────────────────────────────
 
 def env_reset(task_id: str, scenario_index: int = 0) -> ResetResult:
-    valid = ["easy", "medium", "hard", "expert"]
+    valid = ["easy", "medium", "hard", "expert", "encoded"]
     if task_id not in valid:
         raise ValueError(f"Unknown task_id '{task_id}'. Valid: {valid}")
 
     episode = Episode(task_id, scenario_index)
     _sessions[episode.session_id] = episode
     episode.turn_number = 1
+    # Refresh turn 1 with proper context
     episode._load_turn(1)
 
     return ResetResult(
@@ -204,6 +228,7 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
 
     # ── Adaptive Adversary Pressure ───────────────────────────
     decision_str = str(action.decision).lower()
+    episode._last_decision = decision_str # Store for dynamic generation
 
     if decision_str == "allow" and risk_level >= 4:
         episode.adversary_pressure += 1
@@ -298,6 +323,7 @@ def env_step(session_id: str, action: AgentAction) -> StepResult:
             "triggered_rules": triggered_rules,
             "attack_type":     episode.attack_type,
             "episode_done":    done,
+            "decoded_query":   eval_result.get("decoded_query"),
         },
     )
 

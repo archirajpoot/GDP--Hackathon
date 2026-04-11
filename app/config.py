@@ -21,6 +21,7 @@ MAX_STEPS = {
     "medium": 5,
     "hard":   7,
     "expert": 10,
+    "encoded": 5,
 }
 
 VALID_DECISIONS = {"allow", "block", "modify", "escalate", "clarify"}
@@ -91,6 +92,7 @@ EXPECTED_BASELINE_SCORES = {
     "medium": 0.75,
     "hard":   0.55,
     "expert": 0.45,
+    "encoded": 0.50,
 }
 
 import os
@@ -102,4 +104,10 @@ SCENARIO_PATHS = {
     "medium": os.path.join(DATA_DIR, "medium", "scenarios.json"),
     "hard":   os.path.join(DATA_DIR, "hard",   "scenarios.json"),
     "expert": os.path.join(DATA_DIR, "expert", "scenarios.json"),
+    "encoded": os.path.join(DATA_DIR, "encoded", "scenarios.json"),
 }
+
+# Red-Teamer settings
+REDTEAMER_MODEL = os.getenv("REDTEAMER_MODEL", "mock")  # e.g., "claude-3-5-sonnet-20240620"
+REDTEAMER_TEMPERATURE = float(os.getenv("REDTEAMER_TEMPERATURE", "0.9"))
+REDTEAMER_VARIATION = os.getenv("REDTEAMER_VARIATION", "medium")  # low, medium, high

@@ -33,7 +33,7 @@ def check_no_boundary_floats(obj, path="root"):
 
 
 errors = []
-tasks = ["easy", "medium", "hard", "expert"]
+tasks = ["easy", "medium", "hard", "expert", "encoded"]
 
 # ── Test 1: empty body reset ──────────────────────────────────
 try:

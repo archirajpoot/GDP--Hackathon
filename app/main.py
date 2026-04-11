@@ -5,9 +5,9 @@
 import os, statistics
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -16,6 +16,8 @@ from app.config import PROJECT_NAME, VERSION, DESCRIPTION
 from app.models import AgentAction, ResetResult, StepResult, StateResult, TaskInfo
 from app.env import env_reset, env_step, env_state, env_grader, _leaderboard
 from app.tasks import list_all_tasks
+from app.trainer import run_training
+from app.exporter import exporter
 
 # ── App ───────────────────────────────────────────────────────
 app = FastAPI(
@@ -71,7 +73,7 @@ async def root(request: Request):
         "tasks":        ["easy", "medium", "hard", "expert"],
         "endpoints":    ["/reset", "/step", "/state", "/tasks",
                         "/grader", "/baseline", "/health", "/ui",
-                        "/validate", "/leaderboard"],
+                        "/validate", "/leaderboard", "/train", "/export_dataset"],
         "ui":           "/ui",
         "docs":         "/docs",
     }
@@ -98,8 +100,6 @@ def get_metadata():
 
 @app.get("/schema", tags=["openenv"])
 def get_schema():
-    # Return structured schemas for action/observation/state.
-    # These match the openenv.yaml definitions.
     return {
         "action": {
             "type": "object",
@@ -132,7 +132,6 @@ def get_schema():
 
 @app.post("/mcp", tags=["openenv"])
 def post_mcp():
-    # Stub for MCP endpoint
     return {
         "jsonrpc": "2.0",
         "result": {
@@ -144,7 +143,6 @@ def post_mcp():
 
 
 # ── Core OpenEnv Endpoints ────────────────────────────────────
-# NO response_model — the validator sends {} and strict models break it
 
 @app.post("/reset", tags=["openenv"])
 async def reset(request: Request):
@@ -183,7 +181,6 @@ async def step(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Support BOTH POST and GET for /state — validator uses POST
 @app.post("/state", tags=["openenv"])
 async def state_post(request: Request):
     try:
@@ -241,8 +238,6 @@ def baseline():
     try:
         from baseline_inference import run_baseline
         results = run_baseline()
-        # Clamp every mean_score so no 0.0 / 1.0 can appear in the response.
-        # overall_mean is also clamped — the validator checks ALL floats.
         for r in results:
             r["mean_score"] = _clamp(r["mean_score"])
         overall = _clamp(statistics.mean(r["mean_score"] for r in results) if results else 0.5)
@@ -252,27 +247,28 @@ def baseline():
 
 @app.get("/validate", tags=["openenv"])
 def validate():
+    tasks_list = list_all_tasks()
     return {
         "name":               PROJECT_NAME,
         "version":            VERSION,
         "spec_compliant":     True,
-        "tasks":              [t.model_dump() for t in list_all_tasks()],
-        "tasks_with_graders": ["easy", "medium", "hard", "expert"],
+        "tasks":              [t.model_dump() for t in tasks_list],
+        "tasks_with_graders": [t.task_id for t in tasks_list],
         "has_autograder":     True,
         "graders": {
-            t.task_id: t.grader for t in list_all_tasks()
+            t.task_id: t.grader for t in tasks_list
         },
-        "endpoints":          ["/reset","/step","/state","/tasks","/grader","/baseline","/leaderboard", "/metadata", "/schema", "/mcp"],
+        "endpoints":          ["/reset","/step","/state","/tasks","/grader","/baseline","/leaderboard", "/metadata", "/schema", "/mcp", "/train", "/export_dataset"],
         "reward_range":       [0.01, 0.99],
         "deterministic":      True,
         "multi_turn":         True,
         "capabilities":       ["multi_turn", "grader"],
         "attack_types":       ["direct","semantic_disguise","roleplay_jailbreak","emotional_manip","encoded"],
-
     }
 
 @app.get("/leaderboard", tags=["openenv"])
 def leaderboard():
+    from app.env import _leaderboard
     sorted_lb = sorted(_leaderboard, key=lambda x: x["score"], reverse=True)
     avg = _clamp(statistics.mean(x["score"] for x in _leaderboard) if _leaderboard else 0.5)
     return {
@@ -280,6 +276,71 @@ def leaderboard():
         "total_episodes": len(_leaderboard),
         "average_score":  avg,
     }
+
+# ── Global Status ─────────────────────────────────────────────
+TRAINING_STATUS = {"active": False, "last_episodes": 0, "last_task": None, "current_ep": 0}
+
+@app.post("/train", tags=["v3.0"])
+async def train_policy(request: Request, background_tasks: BackgroundTasks):
+    if TRAINING_STATUS["active"]:
+        return {"success": False, "message": "Training already in progress."}
+        
+    try:
+        body = await request.json()
+        episodes = int(body.get("episodes", 100))
+        task_id = body.get("task", "expert")
+        
+        TRAINING_STATUS["active"] = True
+        TRAINING_STATUS["last_episodes"] = episodes
+        TRAINING_STATUS["last_task"] = task_id
+        TRAINING_STATUS["current_ep"] = 0
+        
+        def run_n_update():
+             try:
+                 # In a real environment, we'd pass a callback to run_training
+                 # For now, we simulate the completion since run_training is synchronous within this thread
+                 run_training(episodes=episodes, task_id=task_id)
+                 TRAINING_STATUS["current_ep"] = episodes
+             finally:
+                 TRAINING_STATUS["active"] = False
+
+        background_tasks.add_task(run_n_update)
+        
+        return {
+            "success": True,
+            "message": f"Started training pipeline for {episodes} episodes in background.",
+            "status_url": "/train/status"
+        }
+    except Exception as e:
+        TRAINING_STATUS["active"] = False
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/train/status", tags=["v3.0"])
+def get_train_status():
+    return TRAINING_STATUS
+
+@app.get("/export_dataset", tags=["v3.0"])
+def export_dataset():
+    try:
+        from app.env import _sessions
+        all_episodes = []
+        for sess in list(_sessions.values()):
+            all_episodes.append({
+                "session_id": sess.session_id,
+                "history": sess.memory.get_history()
+            })
+        
+        if not all_episodes:
+            raise HTTPException(status_code=400, detail="No episodes available to export.")
+            
+        ds_path = exporter.export_episodes(all_episodes)
+        return FileResponse(
+            path=ds_path, 
+            filename=os.path.basename(ds_path),
+            media_type="application/octet-stream"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ── Static UI ─────────────────────────────────────────────────
 _static_dir = os.path.join(os.path.dirname(__file__), "static")
