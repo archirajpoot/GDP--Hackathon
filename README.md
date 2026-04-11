@@ -23,17 +23,17 @@ It supports multi-turn conversations, just like a real safety monitoring system 
 I focused on making the AI fully autonomous while keeping full transparency through the Explainable AI panel.
 
 🛡️ **SafetyForge Arena v3.0**
-├── ⚔️ **Basilisk Red-Teamer**: Adaptive adversarial attacks (Template + LiteLLM)
-├── 🏋️ **RL Training Loop**: Stable-Baselines3 (PPO) integration
-├── 📦 **Dataset Exporter**: Direct export to Hugging Face fine-tuning format
-├── 4 tasks: easy → medium → hard → expert                           
-├── 5 attack types: direct, encoded, roleplay, emotional, semantic   
-├── 6-metric reward function (RL-shaped in v3.0)
-├── Full OpenEnv spec: reset/step/state                             
-├── Beautiful interactive dashboard at /ui                           
-├── Leaderboard tracking all episodes                                
-├── /validate endpoint for auto-checker                              
-└── Deployed and live on HuggingFace                                 
+*   ⚔️ **Basilisk Red-Teamer**: Adaptive adversarial attacks (Template + LiteLLM)
+*   🏋️ **RL Training Loop**: Stable-Baselines3 (PPO) integration
+*   📦 **Dataset Exporter**: Direct export to Hugging Face fine-tuning format
+*   🎯 **4 Core Tasks**: easy → medium → hard → expert                           
+*   🔥 **5 Attack Types**: direct, encoded, roleplay, emotional, semantic   
+*   📈 **Shaped Rewards**: 6-metric reward function (clamped 0.01 – 0.99)
+*   🔌 **Standardized API**: Full OpenEnv spec (reset / step / state)                             
+*   📊 **Analytics Hub**: Beautiful interactive dashboard at `/ui`                           
+*   🏆 **Leaderboard**: Global tracking for all training episodes                                
+*   ✅ **Auto-Validator**: `/validate` endpoint for automated compliance
+*   🌍 **Live Deployment**: Fully containerized and hosted on HuggingFace 
    
 
 ## 🔗 Links
