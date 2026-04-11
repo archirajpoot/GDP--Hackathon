@@ -108,6 +108,12 @@ SCENARIO_PATHS = {
 }
 
 # Red-Teamer settings
-REDTEAMER_MODEL = os.getenv("REDTEAMER_MODEL", "mock")  # e.g., "claude-3-5-sonnet-20240620"
-REDTEAMER_TEMPERATURE = float(os.getenv("REDTEAMER_TEMPERATURE", "0.9"))
-REDTEAMER_VARIATION = os.getenv("REDTEAMER_VARIATION", "medium")  # low, medium, high
+def _get_env_float(key, default):
+    val = os.getenv(key)
+    if not val: return default
+    try: return float(val)
+    except ValueError: return default
+
+REDTEAMER_MODEL = os.getenv("REDTEAMER_MODEL", "mock")
+REDTEAMER_TEMPERATURE = _get_env_float("REDTEAMER_TEMPERATURE", 0.9)
+REDTEAMER_VARIATION = os.getenv("REDTEAMER_VARIATION", "medium")
