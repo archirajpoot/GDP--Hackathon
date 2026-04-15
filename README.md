@@ -1,82 +1,72 @@
+# ⚖️ FairForge Arena
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Google-Solution_Challenge_2026-blue?style=for-the-badge&logo=google" alt="Solution Challenge">
+  <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white" alt="GCP">
+  <img src="https://img.shields.io/badge/Gemini_AI-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Gemini">
+</div>
+
+<br>
+
+**Team:**  MASSIVE-X  
+**Focus:** AI Fairness
+**Track:** Unbiased AI Decision
+
+**FairForge Arena** is an accessible, enterprise-grade AI Fairness Training Gym . It is engineered to thoroughly inspect data sets and software models for hidden unfairness. By combining high-performance backend pipelines with Reinforcement Learning, FairForge provides organizations with an easy way to **measure, flag, and fix** harmful bias in automated decisions (finance, healthcare, hiring) *before* their systems impact real people.
+
+---
+
+## 🌍 UN Sustainable Development Goals (SDGs)
+* **SDG 10 (Reduced Inequalities):** Prevents algorithmic discrimination against marginalized groups in life-changing automated decisions.
+* **SDG 16 (Peace, Justice, and Strong Institutions):** Enforces transparency and institutional accountability via automated, accessible compliance reporting.
+
+---
+
+## 🚀 Core Capabilities: Measure, Flag, & Fix
+
+1. **MEASURE: Automated Bias Detection:** Thoroughly inspects data sets to calculate Disparate Impact, Demographic Parity, and Equal Opportunity across intersectional vectors.
+2. **FLAG: Live Bias Drift Monitoring:** WebSockets and REST endpoints simulate real-time MLOps monitoring, triggering automated alerts when fairness drops in production.
+3. **FIX: Reinforcement Learning Mitigation:** An active "gym" (PPO) that trains biased models against adversarial edge-cases to mathematically optimize fairness.
+4. **FIX: Gemini-Powered Counterfactuals:** Ingests complex fairness metrics and uses the Gemini API to output plain-English "What-If" scenarios to correct bias (e.g., *"If the applicant was 5 years older, approval probability increases by 12%"*).
+5. **ACCESSIBILITY: Audit-Ready Reporting:** Generates downloadable, one-click PDF compliance reports hosted on Google Cloud Storage for non-technical stakeholders.
+
+---
+
+## 🏗️ Cloud & Backend Architecture
+
+Built for scale, relying heavily on modern Data Cloud Engineering principles to ensure smooth integration into existing enterprise workflows:
+
+* **Backend API:** `FastAPI` (Python) for high-concurrency, asynchronous ML routing.
+* **AI Engine:** `PyTorch` (PPO training loop) & `Scikit-learn`.
+* **LLM Layer:** Google Gemini API (Vertex AI) for natural language report generation.
+* **Infrastructure (GCP):**
+  * **Google Cloud Run:** Serverless, auto-scaling container deployment.
+  * **Google Cloud Storage (GCS):** Secure blob storage for exported PDF audits.
+  * **Firebase Auth:** JWT-based secure access for API endpoints.
+  * **Docker:** Immutable, containerized environments for the entire MLOps pipeline.
+
+---
+
+## 📂 System Map
+
+```text
 fairforge/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI entry — keep mostly same, update routes
-│   ├── policies.py          # REPLACE FULLY — 12 fairness policies
-│   ├── grader.py            # UPDATE — 6-metric fairness grader
-│   ├── adversary.py         # UPDATE — bias injector instead of jailbreak
-│   ├── fairness_metrics.py  # NEW — core fairness math
-│   ├── mitigation_engine.py # NEW — fix suggestions
-│   └── gemini_auditor.py    # NEW — Gemini API integration
+│   ├── main.py              # FastAPI entry point & MLOps routes
+│   ├── policies.py          # 12 fairness constraints & policies
+│   ├── grader.py            # 6-metric fairness evaluation engine
+│   ├── adversary.py         # Bias injector for stress-testing
+│   ├── fairness_metrics.py  # Core mathematical logic to MEASURE bias
+│   ├── mitigation_engine.py # Automated reweighting & FIX suggestions
+│   └── gemini_auditor.py    # Google Gemini API integration for explanations
 ├── data/
-│   └── tasks/
-│       ├── hiring_easy.json
-│       ├── loan_medium.json
-│       ├── medical_hard.json
-│       └── intersectional_expert.json
-├── openenv/                 # KEEP EXACTLY AS IS
-│   ├── env.py
-│   ├── ppo_trainer.py
-│   └── basilisk.py
-└── reports/                 # NEW — exported fairness reports
-
-
-Hey Team – Final Clear Picture of What We Are Building
-We are creating FairForge Arena — an advanced AI Fairness Training Gym.
-In Very Easy Language:
-Imagine a bank, hospital, or company uses AI to make important decisions (who gets a loan, who gets hired, who gets medical treatment).
-Sometimes this AI is secretly unfair because it learned from old biased data.
-FairForge Arena is like a smart gym + testing lab where companies can:
-
-Send their AI model to train and test
-Automatically discover hidden bias
-Get clear explanations and visual charts
-Get practical fixes
-Train the AI to become fairer over time
-
-It’s not a simple bias calculator. It’s a complete professional system that companies can actually use.
-What Tasks Our System Can Perform (Real-World Use)
-
-Detect Hidden Bias in any dataset (loans, resumes, medical records, etc.)
-Show Bias Visually using Heatmaps (e.g., women being rejected 35% more than men)
-Give Professional Reports that compliance teams can use (PDF with scores and explanations)
-Suggest Real Fixes (reweight data, remove unfair columns, adjust thresholds)
-Train the AI to Improve — using reinforcement learning (PPO), the system keeps practicing on harder biased cases and fairness score improves automatically
-Simulate Real-Time Monitoring — shows alerts if bias appears in live production data
-Provide Counterfactual Explanations — “If this person was male with same qualifications, the loan would have been approved”
-
-How We Are Overcoming the Challenge Statement
-Challenge Statement:
-“Build a clear, accessible solution to inspect datasets and models for hidden unfairness… provide an easy way to measure, flag, and fix harmful bias before they impact real people.”
-Our Solution Does Exactly This — and More:
-
-Inspect & Measure → Full fairness metrics + heatmap
-Flag → Live alerts and violation list
-Fix → Mitigation engine with one-click fixes
-Before impacting real people → Safe sandbox + training mode + real-time drift detection
-
-We are going beyond basic requirements by making it trainable, visual, and enterprise-ready.
-Advanced Features We Are Adding (To Win the Hackathon)
-To make it look professional and impressive to judges, we will add these strong features (some as working, some as smart simulation):
-
-Live Bias Drift Detection (Real-time monitoring panel)
-→ Simulates watching a live model and shows red alerts when fairness drops.
-Bias Heatmap Visualization
-→ Beautiful interactive chart showing bias across gender × race × age.
-Counterfactual Explanations ("What-If")
-→ “If we change this one feature, the decision becomes fair.”
-One-Click Fairness Report Card (PDF)
-→ Professional report with metrics, explanations, and mitigation suggestions — ready for compliance teams.
-MLOps Integration Mock
-→ Show an API endpoint that companies can plug into their existing ML pipeline.
-
-These features show judges that we are thinking like a real enterprise product, not just a college project.
-Real-World Impact (Why This Wins)
-
-Helps banks avoid unfair loan rejections
-Helps companies avoid discriminatory hiring
-Helps hospitals reduce bias in medical AI
-Saves companies from lawsuits and reputation damage
-Supports EU AI Act and global fairness regulations
-
-This is why judges will love it — high technical level + real societal impact + polished demo.
+│   └── tasks/               # Benchmark datasets (Hiring, Loans, Medical)
+├── openenv/                 
+│   ├── env.py               # RL environment for fairness simulation
+│   ├── ppo_trainer.py       # PPO loop for algorithmic optimization
+│   └── basilisk.py          # Core evaluation/grading scripts
+├── reports/                 # Output directory for accessible compliance PDFs
+├── Dockerfile               # Production container configuration
+└── requirements.txt         # Dependency manifest

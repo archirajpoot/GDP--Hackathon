@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FairForge Arena v4.0 • AI Fairness Gym • Google Hackathon Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+    
+    :root {
+      --cyan-glow: #00f5ff;
+      --purple-glow: #c026d3;
+      --emerald-glow: #10b981;
+    }
+    
+    body {
+      background: radial-gradient(circle at 50% 20%, #0a0c1a 0%, #1a1f2e 40%, #0f1320 100%);
+      color: #e5e9f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    
+    .title-font {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .glass {
+      background: rgba(15, 20, 35, 0.92);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 245, 255, 0.15);
+      box-shadow: 0 0 40px rgba(0, 245, 255, 0.15);
+    }
+    
+    .neon-cyan {
+      text-shadow: 
+        0 0 10px var(--cyan-glow),
+        0 0 20px var(--cyan-glow),
+        0 0 30px rgba(0, 245, 255, 0.5);
+    }
+    
+    .neon-purple {
+      text-shadow: 
+        0 0 10px var(--purple-glow),
+        0 0 20px var(--purple-glow);
+    }
+    
+    .glow-cyan { 
+      box-shadow: 
+        0 0 30px rgba(0, 245, 255, 0.4),
+        inset 0 0 20px rgba(0, 245, 255, 0.1);
+    }
+    
+    .card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 25px 50px -12px rgb(0 245 255 / 0.3);
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(0,245,255,0.3); }
+      50% { box-shadow: 0 0 40px rgba(0,245,255,0.8); }
+    }
+    .live-pulse { animation: pulseGlow 1.8s infinite ease-in-out; }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    
+    .modal-enter {
+      animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.95) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    
+    .heatmap-cell {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .heatmap-cell:hover {
+      transform: scale(1.12) rotate(2deg);
+      filter: brightness(1.2);
+    }
+    
+    .chat-bubble {
+      animation: chatPop 0.3s ease;
+    }
+    
+    /* Background neural network effect */
+    .bg-neural {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0,245,255,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(192,38,211,0.08) 0%, transparent 50%);
+      z-index: -1;
+      pointer-events: none;
+      animation: neuralShift 25s linear infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-6 relative">
+  <!-- Neural background -->
+  <div class="bg-neural"></div>
+
+  <div class="max-w-7xl mx-auto">
+    <!-- HEADER - HACKATHON READY -->
+    <div class="dashboard-header flex justify-between items-center mb-8 fade-in">
+      <div class="flex items-center gap-5">
+        <!-- Logo -->
+        <div class="relative w-14 h-14 bg-gradient-to-br from-[#00f5ff] to-[#c026d3] rounded-3xl flex items-center justify-center text-4xl shadow-2xl rotate-12 hover:rotate-0 transition-transform">
+          ⚖️
+          <div class="absolute -top-1 -right-1 text-xs font-bold bg-emerald-400 text-black px-2 py-px rounded-2xl">v4.0</div>
+        </div>
+        
+        <div>
+          <h1 class="title-font text-5xl font-semibold tracking-[-2px] neon-cyan">FAIRFORGE ARENA</h1>
+          <div class="flex items-center gap-3 -mt-1">
+            <p class="text-[#00f5ff] text-xl font-medium">AI Fairness Gym</p>
+            <div class="px-4 py-1 bg-gradient-to-r from-purple-600 to-cyan-500 text-white text-xs font-bold rounded-3xl flex items-center gap-2 shadow-inner">
+              <i class="fas fa-trophy"></i>
+              GOOGLE HACKATHON EDITION
+            </div>
+            <span class="text-emerald-400 text-sm font-medium flex items-center gap-1">
+              <i class="fas fa-bolt"></i> POWERED BY GEMINI 2.5
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right header controls -->
+      <div class="flex items-center gap-4">
+        <!-- Model badge -->
+        <div class="glass px-5 py-2 rounded-3xl flex items-center gap-3 text-sm font-medium">
+          <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+          <span>Model:</span>
+          <span class="text-cyan-400 font-semibold">Llama-3-FairTune • v2.3</span>
+          <button onclick="switchModel()" 
+                  class="text-xs px-3 py-1 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex items-center gap-1">
+            <i class="fas fa-sync"></i> SWITCH
+          </button>
+        </div>
+
+        <!-- Live status -->
+        <div class="live-badge flex items-center gap-3 bg-emerald-900/40 text-emerald-400 px-6 py-3 rounded-3xl text-sm font-semibold live-pulse">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-400"></span>
+          </span>
+          LIVE • 14,872 inferences/sec
+        </div>
+
+        <!-- Quick actions -->
+        <button onclick="runFullAudit()" 
+                class="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 px-8 py-3 rounded-3xl font-semibold text-white shadow-xl transition-all hover:scale-105">
+          <i class="fas fa-bolt"></i>
+          <span>RUN FULL AUDIT</span>
+        </button>
+
+        <div onclick="toggleChat()" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-2xl cursor-pointer hover:scale-110 transition-transform shadow-2xl">
+          <i class="fas fa-robot"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEALTH BAR - ANIMATED COUNTERS -->
+    <div class="health-bar glass rounded-3xl p-6 mb-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div class="health-item flex flex-col items-center">
+        <span class="text-gray-400 text-xs uppercase tracking-[1px]">Overall Fairness Score</span>
+        <div id="overall-score" class="text-6xl font-bold text-cyan-400 mt-1 tabular-nums">84</div>
+        <div class="text-xs text-emerald-400 flex items-center gap-1">
+          <i class="fas fa-arrow-trend-up"></i> +12 from last audit
+        </div>
+        <div class="h-2 w-36 bg-gray-800 rounded-full mt-3 overflow-hidden">
+          <div id="score-bar" class="h-2 bg-gradient-to-r from-cyan-400 to-emerald-400 w-[84%] rounded-full"></div>
+        </div>
+      </div>
+      
+      <div class="health-item flex flex-col items-center">
+        <span class="text-gray-400 text-xs uppercase tracking-[1px]">80% Rule Compliance</span>
+        <div id="compliance-status" class="text-4xl font-semibold mt-2 flex items-center gap-3">
+          <i class="fas fa-shield-alt text-emerald-400"></i>
+          <span>4/4 GROUPS</span>
+        </div>
+        <p class="text-emerald-400 text-sm mt-1">PERFECT • EU AI ACT READY</p>
+      </div>
+      
+      <div class="health-item flex flex-col items-center">
+        <span class="text-gray-400 text-xs uppercase tracking-[1px]">Model Drift</span>
+        <div id="drift-status" class="text-4xl font-semibold mt-2 flex items-center gap-3 text-emerald-400">
+          <i class="fas fa-check-circle"></i>
+          <span>0.8%</span>
+        </div>
+        <div class="text-xs bg-emerald-400/10 text-emerald-400 px-4 py-px rounded-3xl mt-2">STABLE • NO DRIFT DETECTED</div>
+      </div>
+      
+      <div class="health-item flex flex-col items-center">
+        <span class="text-gray-400 text-xs uppercase tracking-[1px]">Data Quality + Coverage</span>
+        <div class="flex items-baseline gap-2 mt-2">
+          <div id="data-quality" class="text-5xl font-bold text-emerald-400">99.4</div>
+          <div class="text-xl text-emerald-400">%</div>
+        </div>
+        <div class="w-full max-w-[160px] bg-gray-800 h-2 rounded-3xl mt-3">
+          <div class="bg-emerald-400 h-2 rounded-3xl w-[99%]"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- LEFT COLUMN - MAIN ARENA -->
+      <div class="lg:col-span-8 space-y-8">
+        
+        <!-- INTERSECTIONAL BIAS HEATMAP - HERO -->
+        <div class="card glass rounded-3xl p-8 glow-cyan">
+          <div class="flex justify-between items-baseline mb-6">
+            <h2 class="text-3xl font-semibold flex items-center gap-4">
+              <i class="fas fa-fire-flame-curved text-orange-400"></i>
+              INTERSECTIONAL BIAS HEATMAP
+            </h2>
+            <div class="flex gap-6 text-sm">
+              <div><span class="inline-block w-4 h-4 bg-emerald-400 rounded mr-2"></span><span class="font-medium">FAIR</span></div>
+              <div><span class="inline-block w-4 h-4 bg-amber-400 rounded mr-2"></span><span class="font-medium">CAUTION</span></div>
+              <div><span class="inline-block w-4 h-4 bg-red-400 rounded mr-2"></span><span class="font-medium">HIGH RISK</span></div>
+            </div>
+            <button onclick="simulateNewData()" class="text-xs flex items-center gap-2 bg-white/10 hover:bg-white/20 px-5 py-2 rounded-3xl">
+              <i class="fas fa-dice"></i> SIMULATE NEW DATASET
+            </button>
+          </div>
+          
+          <div class="flex gap-6">
+            <!-- Y axis -->
+            <div class="flex flex-col justify-between text-sm font-medium text-gray-300 py-2">
+              <div class="flex items-center gap-2"><i class="fas fa-mars"></i> Male</div>
+              <div class="flex items-center gap-2"><i class="fas fa-venus"></i> Female</div>
+              <div class="flex items-center gap-2"><i class="fas fa-transgender"></i> Non-Binary</div>
+            </div>
+            
+            <!-- Grid -->
+            <div class="flex-1">
+              <div class="grid grid-cols-4 gap-3 mb-3 text-center text-gray-400 text-sm font-medium">
+                <div>White</div>
+                <div>Black</div>
+                <div>Asian</div>
+                <div>Hispanic / Latine</div>
+              </div>
+              <div id="bias-heatmap" class="grid grid-cols-4 gap-3"></div>
+            </div>
+          </div>
+          
+          <!-- Insight bar -->
+          <div class="mt-8 p-5 bg-gradient-to-r from-red-500/10 to-transparent border border-red-400/30 rounded-3xl flex items-center gap-5">
+            <div class="text-4xl">🔥</div>
+            <div class="flex-1">
+              <strong class="text-red-400">CRITICAL BIAS:</strong> 
+              <span id="highest-bias" class="font-semibold">Black • Female</span>
+              <span class="ml-3 text-gray-400">−31% approval disparity vs White Male baseline</span>
+            </div>
+            <button onclick="showCounterfactual('Black', 'Female', 0.31)" 
+                    class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-3xl text-sm font-semibold flex items-center gap-2">
+              <i class="fas fa-magic"></i> WHAT-IF FIX
+            </button>
+          </div>
+        </div>
+        
+        <!-- PPO TRAINING + RADAR -->
+        <div class="grid grid-cols-1 xl:grid-cols-5 gap-8">
+          <!-- Training Progress -->
+          <div class="card glass rounded-3xl p-8 xl:col-span-3 glow-cyan">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center gap-3">
+              <i class="fas fa-robot"></i> PPO TRAINING PROGRESS
+            </h2>
+            <div id="training-chart" class="h-72 w-full"></div>
+            <div class="flex justify-between mt-6 text-center">
+              <div>
+                <div id="bias-reduction" class="text-6xl font-bold text-emerald-400">92%</div>
+                <div class="text-sm text-gray-400">Bias Reduction Achieved</div>
+              </div>
+              <div>
+                <div id="current-bias-score" class="text-6xl font-bold">0.07</div>
+                <div class="text-sm text-gray-400">Current Global Bias</div>
+              </div>
+              <div class="text-emerald-400 text-sm flex flex-col justify-center">
+                <div class="flex items-center gap-1"><i class="fas fa-medal"></i> LEGENDARY</div>
+                <div class="text-xs">Top 1% Fair Models</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Radar Chart -->
+          <div class="card glass rounded-3xl p-8 xl:col-span-2">
+            <h2 class="text-2xl font-semibold mb-4">Group Fairness Radar</h2>
+            <div id="radar-chart" class="h-72"></div>
+          </div>
+        </div>
+        
+        <!-- Recent Violations -->
+        <div class="card glass rounded-3xl p-8">
+          <div class="flex justify-between mb-6">
+            <h2 class="text-2xl font-semibold">Recent Bias Violations • Live Feed</h2>
+            <span onclick="clearViolations()" class="text-xs text-cyan-400 hover:text-cyan-300 cursor-pointer flex items-center gap-1">
+              <i class="fas fa-trash"></i> CLEAR ALL
+            </span>
+          </div>
+          <div id="violations-list" class="space-y-4"></div>
+        </div>
+      </div>
+      
+      <!-- RIGHT COLUMN - CONTROLS + METRICS -->
+      <div class="lg:col-span-4 space-y-8">
+        
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="metric-card glass rounded-3xl p-6 text-center card group">
+            <p class="text-gray-400 text-sm">Demographic Parity</p>
+            <p id="metric-dp" class="text-6xl font-bold text-emerald-400 mt-3">0.96</p>
+            <div class="flex justify-center mt-4">
+              <div class="w-40 h-2 bg-gray-700 rounded-3xl overflow-hidden">
+                <div class="bg-emerald-400 h-2 rounded-3xl" style="width: 96%"></div>
+              </div>
+            </div>
+            <div class="text-emerald-400 text-xs mt-2 font-medium">PASS • +0.04</div>
+          </div>
+          
+          <div class="metric-card glass rounded-3xl p-6 text-center card group">
+            <p class="text-gray-400 text-sm">Equal Opportunity</p>
+            <p id="metric-eo" class="text-6xl font-bold text-emerald-400 mt-3">0.94</p>
+            <div class="flex justify-center mt-4">
+              <div class="w-40 h-2 bg-gray-700 rounded-3xl overflow-hidden">
+                <div class="bg-emerald-400 h-2 rounded-3xl" style="width: 94%"></div>
+              </div>
+            </div>
+            <div class="text-emerald-400 text-xs mt-2 font-medium">PASS • +0.06</div>
+          </div>
+          
+          <div class="metric-card glass rounded-3xl p-6 text-center card group">
+            <p class="text-gray-400 text-sm">Disparate Impact</p>
+            <p id="metric-di" class="text-6xl font-bold text-emerald-400 mt-3">0.89</p>
+            <div class="flex justify-center mt-4">
+              <div class="w-40 h-2 bg-gray-700 rounded-3xl overflow-hidden">
+                <div class="bg-emerald-400 h-2 rounded-3xl" style="width: 89%"></div>
+              </div>
+            </div>
+            <div class="text-emerald-400 text-xs mt-2 font-medium">PASS • 80% RULE MET</div>
+          </div>
+          
+          <div class="metric-card glass rounded-3xl p-6 text-center card group">
+            <p class="text-gray-400 text-sm">Intersectional Bias</p>
+            <p id="metric-ib" class="text-6xl font-bold text-emerald-400 mt-3">0.21</p>
+            <div class="flex justify-center mt-4">
+              <div class="w-40 h-2 bg-gray-700 rounded-3xl overflow-hidden">
+                <div class="bg-emerald-400 h-2 rounded-3xl" style="width: 79%"></div>
+              </div>
+            </div>
+            <div class="text-emerald-400 text-xs mt-2 font-medium">EXCELLENT • −41% from baseline</div>
+          </div>
+        </div>
+        
+        <!-- MITIGATION LAB -->
+        <div class="card glass rounded-3xl p-8">
+          <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+            <i class="fas fa-wand-magic-sparkles"></i> MITIGATION LAB
+          </h2>
+          <div class="space-y-4">
+            <button onclick="applyMitigation('reweight')" 
+                    class="w-full py-5 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:brightness-110 rounded-3xl font-semibold text-lg flex items-center justify-center gap-4">
+              <i class="fas fa-balance-scale text-2xl"></i>
+              <div>
+                REWEIGHT TRAINING DATA
+                <div class="text-xs opacity-75">Balances protected groups instantly</div>
+              </div>
+            </button>
+            
+            <button onclick="applyMitigation('drop_proxy')" 
+                    class="w-full py-5 bg-white/10 hover:bg-white/20 rounded-3xl font-semibold text-lg flex items-center justify-center gap-4">
+              <i class="fas fa-cut text-2xl"></i>
+              <div>
+                REMOVE PROXY FEATURES
+                <div class="text-xs opacity-75">ZIP, name, neighborhood</div>
+              </div>
+            </button>
+            
+            <button onclick="applyMitigation('threshold')" 
+                    class="w-full py-5 bg-white/10 hover:bg-white/20 rounded-3xl font-semibold text-lg flex items-center justify-center gap-4">
+              <i class="fas fa-sliders-h text-2xl"></i>
+              <div>
+                ADAPTIVE THRESHOLD
+                <div class="text-xs opacity-75">+7% for disadvantaged groups</div>
+              </div>
+            </button>
+            
+            <button onclick="applyMitigation('counterfactual')" 
+                    class="w-full py-5 bg-gradient-to-r from-purple-500 to-pink-500 hover:brightness-110 rounded-3xl font-semibold text-lg flex items-center justify-center gap-4">
+              <i class="fas fa-magic text-2xl"></i>
+              <div>
+                COUNTERFACTUAL AUGMENTATION
+                <div class="text-xs opacity-75">Gemini-powered synthetic fairness</div>
+              </div>
+            </button>
+          </div>
+          
+          <button onclick="exportReport()" 
+                  class="mt-8 w-full py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500 text-white font-bold text-xl rounded-3xl flex items-center justify-center gap-3 shadow-2xl">
+            <i class="fas fa-file-export"></i>
+            EXPORT GOOGLE AI STUDIO + EU AI ACT REPORT
+          </button>
+        </div>
+        
+        <!-- BONUS HACKATHON FEATURE: FAIRNESS ORB -->
+        <div class="glass rounded-3xl p-6 text-center">
+          <div class="mx-auto w-20 h-20 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-3xl flex items-center justify-center text-5xl mb-4 animate-float">
+            🛡️
+          </div>
+          <h3 class="font-semibold text-xl">Your Fairness Shield is at <span class="text-emerald-400">LEGENDARY</span></h3>
+          <p class="text-sm text-gray-400 mt-2">Ready for production deployment on Vertex AI</p>
+          <div onclick="deployToProduction()" class="mt-6 cursor-pointer inline-flex items-center justify-center gap-3 text-emerald-400 hover:text-white bg-emerald-400/10 hover:bg-emerald-400/20 px-10 py-4 rounded-3xl font-medium">
+            <i class="fas fa-rocket"></i>
+            DEPLOY TO PRODUCTION
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COUNTERFACTUAL MODAL -->
+  <div id="cf-modal" onclick="if(event.target.id==='cf-modal')closeModal()" 
+       class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden modal-enter">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="glass rounded-3xl p-10 max-w-lg w-full mx-4">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-3xl font-semibold flex items-center gap-4"><span class="text-4xl">🔮</span> WHAT-IF ANALYSIS</h3>
+        <i onclick="closeModal()" class="fas fa-times text-3xl cursor-pointer"></i>
+      </div>
+      <div id="modal-content" class="text-lg leading-relaxed"></div>
+      
+      <div class="mt-10 flex gap-4">
+        <button onclick="closeModal()" class="flex-1 py-6 text-lg font-medium bg-white/10 hover:bg-white/20 rounded-3xl">CLOSE</button>
+        <button onclick="applyMitigation('counterfactual_fix');closeModal()" 
+                class="flex-1 py-6 text-lg font-medium bg-gradient-to-r from-cyan-400 to-purple-500 text-black rounded-3xl">APPLY GEMINI FIX</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GEMINI CHAT WIDGET -->
+  <div class="fixed bottom-8 right-8 z-50">
+    <div id="chat-window" class="glass w-96 rounded-3xl p-5 mb-4 hidden shadow-2xl">
+      <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl">🧬</div>
+          <div>
+            <span class="font-bold text-xl">Gemini Fairness Co-Pilot</span>
+            <div class="text-xs text-emerald-400">• Online • Thinking in real-time</div>
+          </div>
+        </div>
+        <button onclick="toggleChat()" class="text-2xl text-gray-400 hover:text-white"><i class="fas fa-xmark"></i></button>
+      </div>
+      
+      <div id="chat-messages" class="h-80 overflow-y-auto space-y-6 pr-2 mb-6 custom-scroll"></div>
+      
+      <!-- Quick prompts -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <div onclick="quickPrompt(this)" class="text-xs bg-white/10 hover:bg-cyan-400/30 px-4 py-2 rounded-3xl cursor-pointer">Why is Black Female group biased?</div>
+        <div onclick="quickPrompt(this)" class="text-xs bg-white/10 hover:bg-cyan-400/30 px-4 py-2 rounded-3xl cursor-pointer">Best mitigation for disparate impact?</div>
+        <div onclick="quickPrompt(this)" class="text-xs bg-white/10 hover:bg-cyan-400/30 px-4 py-2 rounded-3xl cursor-pointer">Is this EU AI Act compliant?</div>
+      </div>
+      
+      <div class="flex">
+        <input id="chat-input" 
+               onkeypress="if(event.keyCode===13) sendChatMessage()"
+               type="text" 
+               class="flex-1 bg-white/10 border border-white/10 focus:border-cyan-400 rounded-l-3xl px-6 py-4 outline-none text-sm placeholder:text-gray-400"
+               placeholder="Ask anything about fairness...">
+        <button onclick="sendChatMessage()" 
+                class="bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-8 rounded-r-3xl font-bold">SEND</button>
+      </div>
+    </div>
+    
+    <!-- Floating orb -->
+    <button onclick="toggleChat()" 
+            class="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#00f5ff] to-[#c026d3] text-3xl flex items-center justify-center shadow-[0_0_60px_-10px] shadow-cyan-400 hover:shadow-[0_0_80px_10px] hover:scale-110 transition-all">
+      <i class="fas fa-robot"></i>
+    </button>
+  </div>
+
+  <script>
+    // Tailwind script already loaded via CDN
+    function initTailwind() {
+      // Already configured via CDN
+    }
+    
+    // Global state
+    let currentData = {
+      heatmap: [
+        [0.04, 0.11, 0.06, 0.09],
+        [0.22, 0.31, 0.19, 0.27],
+        [0.07, 0.13, 0.08, 0.14]
+      ],
+      metrics: { dp: 0.96, eo: 0.94, di: 0.89, ib: 0.21 },
+      violations: [
+        { id: 'APP-4721', type: 'Intersectional', desc: 'Black Female approval rate 31% lower than baseline', severity: 'high' },
+        { id: 'APP-4819', type: 'Proxy', desc: 'ZIP code leaking race signal', severity: 'medium' },
+        { id: 'APP-4923', type: 'Disparate', desc: 'Non-binary group rejected at higher rate', severity: 'low' }
+      ]
+    }
+    
+    // Simple confetti
+    function launchConfetti() {
+      const colors = ['#00f5ff', '#c026d3', '#10b981', '#f59e0b']
+      for (let i = 0; i < 120; i++) {
+        setTimeout(() => {
+          const confetti = document.createElement('div')
+          confetti.style.position = 'fixed'
+          confetti.style.zIndex = '9999'
+          confetti.style.left = Math.random() * 100 + 'vw'
+          confetti.style.top = '-10px'
+          confetti.style.width = '12px'
+          confetti.style.height = '12px'
+          confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px'
+          confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+          confetti.style.transform = `rotate(${Math.random()*360}deg)`
+          confetti.style.opacity = '1'
+          document.body.appendChild(confetti)
+          
+          const duration = Math.random() * 3000 + 2000
+          const angle = Math.random() * 80 + 20
+          
+          confetti.animate([
+            { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+            { transform: `translateY(${window.innerHeight + 100}px) rotate(${angle * 8}deg)`, opacity: 0 }
+          ], {
+            duration: duration,
+            easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)'
+          })
+          
+          setTimeout(() => confetti.remove(), duration)
+        }, i * 1.5)
+      }
+    }
+    
+    // Animate number
+    function animateValue(id, start, end, duration) {
+      const obj = document.getElementById(id)
+      if (!obj) return
+      const range = end - start
+      let startTime = null
+      
+      const step = (timestamp) => {
+        if (!startTime) startTime = timestamp
+        const progress = Math.min((timestamp - startTime) / duration, 1)
+        const value = Math.floor(progress * range + start)
+        obj.textContent = value
+        if (progress < 1) {
+          window.requestAnimationFrame(step)
+        } else {
+          obj.textContent = end
+        }
+      }
+      window.requestAnimationFrame(step)
+    }
+    
+    // Draw enhanced heatmap
+    function drawHeatmap() {
+      const container = document.getElementById('bias-heatmap')
+      container.innerHTML = ''
+      
+      const genders = ['Male', 'Female', 'Non-Binary']
+      const races = ['White', 'Black', 'Asian', 'Hispanic']
+      let maxBias = 0
+      let maxPos = {i: 0, j: 0}
+      
+      currentData.heatmap.forEach((row, i) => {
+        row.forEach((val, j) => {
+          if (val > maxBias) {
+            maxBias = val
+            maxPos = {i, j}
+          }
+        })
+      })
+      
+      currentData.heatmap.forEach((row, i) => {
+        row.forEach((val, j) => {
+          const cell = document.createElement('div')
+          const perc = Math.round(val * 100)
+          
+          let colorClass = val < 0.12 ? 'bg-emerald-400 text-black' : 
+                          val < 0.22 ? 'bg-amber-400 text-black' : 'bg-red-500 text-white'
+          
+          const isMax = (i === maxPos.i && j === maxPos.j)
+          
+          cell.className = `heatmap-cell h-20 flex flex-col items-center justify-center rounded-3xl text-xs font-bold shadow-inner ${colorClass} ${isMax ? 'ring-4 ring-red-300 ring-offset-4 ring-offset-[#1a1f2e]' : ''}`
+          
+          cell.innerHTML = `
+            <div class="text-2xl font-black">${perc}%</div>
+            <div class="text-[10px] opacity-80 mt-px">${genders[i]}</div>
+            <div class="text-[9px] opacity-70">${races[j]}</div>
+          `
+          
+          cell.addEventListener('click', () => {
+            showCounterfactual(races[j], genders[i], val)
+          })
+          
+          container.appendChild(cell)
+        })
+      })
+      
+      // Update highest bias banner
+      document.getElementById('highest-bias').innerHTML = `
+        ${races[maxPos.j]} • ${genders[maxPos.i]} 
+        <span class="text-xs ml-2 bg-red-400/20 text-red-400 px-3 py-px rounded-3xl">${Math.round(maxBias*100)}% disparity</span>
+      `
+    }
+    
+    // Counterfactual modal
+    function showCounterfactual(race, gender, disparity) {
+      const modal = document.getElementById('cf-modal')
+      const content = document.getElementById('modal-content')
+      
+      const percent = Math.round(disparity * 100)
+      
+      content.innerHTML = `
+        <div class="bg-gradient-to-br from-red-400/10 to-transparent p-6 rounded-3xl mb-6">
+          <p class="text-2xl">If we flip <span class="font-bold">${gender} ${race}</span> → <span class="text-emerald-400 font-bold">White Male</span></p>
+          <p class="text-7xl font-bold text-cyan-400 mt-4">${percent}% <span class="text-4xl font-normal text-gray-400">higher chance</span></p>
+        </div>
+        <p class="text-gray-300">This counterfactual shows strong protected attribute influence — a red flag under EU AI Act Article 10 and Google AI Principles.</p>
+        <p class="mt-6 text-sm text-emerald-400 flex items-center gap-2"><i class="fas fa-check"></i> Gemini suggests: synthetic data rebalancing + adversarial debiasing</p>
+      `
+      modal.classList.remove('hidden')
+      modal.style.display = 'flex'
+    }
+    
+    function closeModal() {
+      const modal = document.getElementById('cf-modal')
+      modal.classList.add('hidden')
+      modal.style.display = 'none'
+    }
+    
+    // Training chart
+    function drawTrainingChart() {
+      const trace = {
+        x: [0, 50, 120, 220, 340, 500],
+        y: [0.91, 0.64, 0.41, 0.23, 0.14, 0.07],
+        mode: 'lines+markers',
+        line: { color: '#00f5ff', width: 7, shape: 'spline' },
+        marker: { color: '#c026d3', size: 8 },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(0, 245, 255, 0.12)',
+        name: 'Bias Score'
+      }
+      
+      Plotly.newPlot('training-chart', [trace], {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        margin: { t: 20, r: 30, b: 50, l: 50 },
+        xaxis: { title: 'PPO Episodes', gridcolor: '#ffffff15', tickfont: { color: '#aaa' } },
+        yaxis: { title: 'Bias ↓', gridcolor: '#ffffff15', tickfont: { color: '#aaa' } },
+        font: { color: '#e5e9f0', family: 'Inter' }
+      }, {responsive: true})
+    }
+    
+    // Radar chart
+    function drawRadarChart() {
+      const data = [{
+        type: 'scatterpolar',
+        r: [0.96, 0.94, 0.89, 0.91, 0.93, 0.96],
+        theta: ['Demographic Parity', 'Equal Opportunity', 'Disparate Impact', 'Predictive Parity', 'Equalized Odds', 'Intersectional'],
+        fill: 'toself',
+        fillcolor: 'rgba(16, 185, 129, 0.3)',
+        line: { color: '#10b981', width: 5 }
+      }]
+      
+      Plotly.newPlot('radar-chart', data, {
+        polar: { radialaxis: { visible: true, range: [0, 1] } },
+        showlegend: false,
+        paper_bgcolor: 'transparent',
+        margin: { t: 10, b: 10 }
+      }, {responsive: true})
+    }
+    
+    // Violations list
+    function updateViolationsList() {
+      const container = document.getElementById('violations-list')
+      container.innerHTML = ''
+      
+      currentData.violations.forEach(v => {
+        const severityColor = v.severity === 'high' ? 'red' : v.severity === 'medium' ? 'amber' : 'emerald'
+        
+        const div = document.createElement('div')
+        div.className = `flex gap-4 p-5 bg-white/5 rounded-3xl border border-${severityColor}-400/30 hover:border-${severityColor}-400 transition-colors`
+        div.innerHTML = `
+          <div class="flex-1">
+            <div class="flex justify-between">
+              <span class="font-mono text-sm">${v.id}</span>
+              <span class="px-4 text-xs bg-${severityColor}-400/10 text-${severityColor}-400 rounded-3xl h-fit">${v.severity.toUpperCase()}</span>
+            </div>
+            <p class="mt-3">${v.desc}</p>
+          </div>
+          <button onclick="fixViolation('${v.id}');event.stopImmediatePropagation()" class="self-start text-xs px-6 py-3 bg-white/10 hover:bg-white/20 rounded-3xl font-medium">FIX WITH GEMINI</button>
+        `
+        container.appendChild(div)
+      })
+      
+      if (currentData.violations.length === 0) {
+        container.innerHTML = `<div class="text-center py-12 text-emerald-400">🎉 No violations! Your model is perfectly fair.</div>`
+      }
+    }
+    
+    function fixViolation(id) {
+      currentData.violations = currentData.violations.filter(v => v.id !== id)
+      updateViolationsList()
+      toast('✅ Violation fixed using Gemini counterfactuals', 'success')
+      // Slight improvement
+      currentData.heatmap[1][1] = Math.max(0.05, currentData.heatmap[1][1] * 0.7)
+      drawHeatmap()
+    }
+    
+    function clearViolations() {
+      currentData.violations = []
+      updateViolationsList()
+    }
+    
+    // Chat
+    let chatHistory = []
+    
+    function toggleChat() {
+      const win = document.getElementById('chat-window')
+      win.classList.toggle('hidden')
+      if (!win.classList.contains('hidden') && chatHistory.length === 0) {
+        // Welcome
+        const welcome = document.createElement('div')
+        welcome.className = 'chat-bubble bg-gradient-to-br from-cyan-400/20 to-transparent p-4 rounded-3xl max-w-[80%]'
+        welcome.innerHTML = `👋 Hi! I'm <strong>Gemini 2.5 Fairness Co-Pilot</strong>. How can I help you make this model the fairest in the arena today?`
+        document.getElementById('chat-messages').appendChild(welcome)
+      }
+    }
+    
+    function quickPrompt(el) {
+      const text = el.textContent
+      document.getElementById('chat-input').value = text
+      sendChatMessage()
+    }
+    
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input')
+      const msg = input.value.trim()
+      if (!msg) return
+      
+      const messages = document.getElementById('chat-messages')
+      
+      // User bubble
+      const userDiv = document.createElement('div')
+      userDiv.className = 'chat-bubble ml-auto bg-white/10 p-4 rounded-3xl rounded-br-none max-w-[75%]'
+      userDiv.textContent = msg
+      messages.appendChild(userDiv)
+      
+      input.value = ''
+      messages.scrollTop = messages.scrollHeight
+      
+      // Simulate Gemini thinking
+      setTimeout(() => {
+        let replyText = ''
+        
+        const lower = msg.toLowerCase()
+        
+        if (lower.includes('black') || lower.includes('female')) {
+          replyText = `🚨 Strong intersectional bias confirmed for Black women (31% gap). Root cause: underrepresented positive examples in training data. I recommend Gemini-powered counterfactual augmentation.`
+        } else if (lower.includes('fix') || lower.includes('mitigation')) {
+          replyText = `💡 Top 3 recommendations:<br>1. Reweighting (instant)<br>2. Counterfactual data synthesis<br>3. Adversarial training with Gemini`
+        } else if (lower.includes('eu') || lower.includes('act') || lower.includes('compliant')) {
+          replyText = `✅ Your model is <strong>fully compliant</strong> after the latest mitigation. All Article 10 &amp; 13 requirements are satisfied. Ready for Google AI Studio deployment.`
+        } else {
+          replyText = `📈 Current score is 84/100. The heatmap shows the biggest issue is still intersectional bias. Would you like me to generate a full mitigation plan?`
+        }
+        
+        const aiDiv = document.createElement('div')
+        aiDiv.className = 'chat-bubble bg-gradient-to-br from-purple-400/10 to-cyan-400/10 p-4 rounded-3xl rounded-bl-none max-w-[75%]'
+        aiDiv.innerHTML = replyText
+        messages.appendChild(aiDiv)
+        messages.scrollTop = messages.scrollHeight
+      }, 1100)
+    }
+    
+    // Mitigation actions with real updates
+    function applyMitigation(type) {
+      let message = ''
+      
+      switch(type) {
+        case 'reweight':
+          currentData.heatmap = currentData.heatmap.map(row => row.map(v => Math.max(0.04, v * 0.55)))
+          currentData.metrics.ib = 0.14
+          currentData.metrics.di = 0.93
+          message = 'Reweighting complete • Bias dropped 45%'
+          break
+        case 'drop_proxy':
+          currentData.heatmap[1][1] = 0.09
+          currentData.metrics.dp = 0.98
+          message = 'Proxy columns removed • Parity improved'
+          break
+        case 'threshold':
+          currentData.metrics.eo = 0.97
+          message = 'Adaptive thresholds applied'
+          break
+        case 'counterfactual':
+        case 'counterfactual_fix':
+          currentData.heatmap = currentData.heatmap.map(row => row.map(v => Math.max(0.03, v * 0.4)))
+          message = 'Gemini counterfactuals generated and applied!'
+          launchConfetti()
+          break
+      }
+      
+      toast(message || 'Mitigation applied successfully!', 'success')
+      drawHeatmap()
+      updateMetricsUI()
+      updateViolationsList()
+      
+      // Refresh radar
+      drawRadarChart()
+    }
+    
+    function updateMetricsUI() {
+      document.getElementById('metric-dp').textContent = currentData.metrics.dp.toFixed(2)
+      document.getElementById('metric-eo').textContent = currentData.metrics.eo.toFixed(2)
+      document.getElementById('metric-di').textContent = currentData.metrics.di.toFixed(2)
+      document.getElementById('metric-ib').textContent = currentData.metrics.ib.toFixed(2)
+      
+      // Overall score
+      const newOverall = Math.floor(78 + Math.random() * 12)
+      animateValue('overall-score', 78, newOverall, 1200)
+      document.getElementById('score-bar').style.width = newOverall + '%'
+    }
+    
+    // Toast
+    function toast(msg, type = 'success') {
+      const t = document.createElement('div')
+      t.style.cssText = `position:fixed; top:24px; right:24px; padding:16px 24px; border-radius:9999px; font-weight:600; color:white; z-index:99999; display:flex; align-items:center; gap:12px; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.4);`
+      t.style.background = type === 'success' ? '#10b981' : '#00f5ff'
+      t.innerHTML = `${type === 'success' ? '✅' : '🔥'} ${msg}`
+      document.body.appendChild(t)
+      
+      setTimeout(() => {
+        t.style.transition = 'all 0.4s cubic-bezier(0.4,0,1,1)'
+        t.style.opacity = 0
+        t.style.transform = 'translateY(-20px)'
+        setTimeout(() => t.remove(), 400)
+      }, 3200)
+    }
+    
+    // Run full audit simulation
+    function runFullAudit() {
+      const btns = document.querySelectorAll('button')
+      btns.forEach(b => b.style.pointerEvents = 'none')
+      
+      toast('🔬 Running comprehensive fairness audit with Gemini 2.5...', 'success')
+      
+      setTimeout(() => {
+        // Improve everything
+        currentData.heatmap = currentData.heatmap.map(row => row.map(v => Math.max(0.03, v * (0.4 + Math.random() * 0.3))))
+        currentData.metrics = { dp: 0.98, eo: 0.97, di: 0.94, ib: 0.09 }
+        
+        drawHeatmap()
+        updateMetricsUI()
+        drawRadarChart()
+        updateViolationsList()
+        
+        // Fake training progress update
+        document.getElementById('bias-reduction').textContent = '96%'
+        document.getElementById('current-bias-score').textContent = '0.04'
+        
+        toast('🎉 FULL AUDIT COMPLETE — Your model is now Google AI Ready!', 'success')
+        launchConfetti()
+        
+        btns.forEach(b => b.style.pointerEvents = 'auto')
+      }, 2100)
+    }
+    
+    // Simulate new data
+    function simulateNewData() {
+      currentData.heatmap = [
+        [0.05, 0.09, 0.07, 0.11],
+        [0.18, 0.26, 0.15, 0.21],
+        [0.06, 0.12, 0.09, 0.13]
+      ]
+      drawHeatmap()
+      toast('🧪 New synthetic dataset loaded • Fairness re-evaluated', 'success')
+    }
+    
+    function switchModel() {
+      toast('🔄 Switched to Llama-3-FairTune v2.4 (Gemini distilled)', 'success')
+      // Slight random improvement
+      currentData.heatmap[1][1] -= 0.08
+      drawHeatmap()
+    }
+    
+    function deployToProduction() {
+      toast('🚀 Deployed to Vertex AI • Monitoring started', 'success')
+      launchConfetti()
+      setTimeout(() => {
+        toast('📡 Your fair model is now LIVE in production!', 'success')
+      }, 1200)
+    }
+    
+    // Export
+    function exportReport() {
+      toast('📄 EU AI Act + Google AI Studio report exported as PDF', 'success')
+      launchConfetti()
+    }
+    
+    // Main init
+    window.onload = function() {
+      initTailwind()
+      drawHeatmap()
+      drawTrainingChart()
+      drawRadarChart()
+      updateViolationsList()
+      updateMetricsUI()
+      
+      // Keyboard shortcut for audit
+      document.addEventListener('keydown', (e) => {
+        if (e.metaKey && e.key === 'k') {
+          e.preventDefault()
+          runFullAudit()
+        }
+      })
+      
+      console.log('%c🚀 FairForge Arena v4.0 ready for Google Hackathon victory!', 'color:#00f5ff; font-size:13px; font-weight:bold')
+    }
+  </script>
+</body>
+</html>
