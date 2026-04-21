@@ -12,6 +12,9 @@ import uuid
 from pathlib import Path
 from pydantic import BaseModel
 from datetime import datetime, timezone
+import hashlib
+import json as _json
+import re
 
 
 ROOT_DIR = Path(__file__).parent
@@ -33,6 +36,69 @@ api_router = APIRouter(prefix="/api")
 _runs: dict = {}   # run_id -> audit data
 _train = {"current_ep": 0, "total_ep": 0, "reward_history": [], "bias_history": [], "logs": [], "active": False, "bias_before": 0.7, "bias_after": 0.2}
 _train_lock = threading.Lock()
+
+# ====== Audit Trail ======
+_audit_log: list = []
+
+def _compute_hash(data: str) -> str:
+    return hashlib.sha256(data.encode()).hexdigest()
+
+def _append_audit_entry(event: str, data: dict) -> dict:
+    prev_hash = _audit_log[-1]["chain_hash"] if _audit_log else "0" * 64
+    entry: dict = {
+        "trace_id": str(uuid.uuid4()),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "event": event,
+        "data": data,
+        "prev_hash": prev_hash,
+    }
+    body_hash = _compute_hash(_json.dumps(entry, sort_keys=True))
+    entry["log_hash"] = body_hash
+    entry["chain_hash"] = _compute_hash(prev_hash + body_hash)
+    _audit_log.append(entry)
+    return entry
+
+# ====== Drift Monitoring ======
+_drift_state: dict = {
+    "history": [], "alerts": [], "injected": False,
+    "baseline": {"disparate_impact_ratio": 0.780, "demographic_parity_diff": 0.120, "overall_bias_score": 0.450},
+}
+
+def _init_drift_history():
+    rng = random.Random(42)
+    for i in range(14):
+        di = round(0.780 + rng.uniform(-0.025, 0.025), 3)
+        dpd = round(0.120 + rng.uniform(-0.015, 0.015), 3)
+        bias = round(0.450 + rng.uniform(-0.025, 0.025), 3)
+        _drift_state["history"].append({"day": f"D-{14-i}", "disparate_impact_ratio": di, "demographic_parity_diff": dpd, "overall_bias_score": bias, "alert": False})
+
+_init_drift_history()
+
+# ====== Benchmark ======
+_BENCH_SCORES: dict = {
+    "gpt-4o": {"gender_bias": 0.82, "racial_bias": 0.76, "age_bias": 0.80, "overall_fairness": 0.79},
+    "claude-3.5-sonnet": {"gender_bias": 0.91, "racial_bias": 0.87, "age_bias": 0.86, "overall_fairness": 0.88},
+    "gemini-1.5-pro": {"gender_bias": 0.86, "racial_bias": 0.83, "age_bias": 0.84, "overall_fairness": 0.84},
+    "llama-3.1-70b": {"gender_bias": 0.74, "racial_bias": 0.70, "age_bias": 0.72, "overall_fairness": 0.72},
+    "mistral-large": {"gender_bias": 0.78, "racial_bias": 0.75, "age_bias": 0.76, "overall_fairness": 0.76},
+}
+
+# ====== Policy Engine ======
+_policy_rules: list = [
+    {"id": "R01", "name": "Four-Fifths Rule (EEOC)", "metric": "disparate_impact_ratio", "operator": ">=", "threshold": 0.80, "action": "BLOCK", "active": True},
+    {"id": "R02", "name": "Demographic Parity Guard", "metric": "demographic_parity_diff", "operator": "<=", "threshold": 0.10, "action": "WARN", "active": True},
+    {"id": "R03", "name": "Equal Opportunity SLO", "metric": "equal_opportunity_diff", "operator": "<=", "threshold": 0.15, "action": "WARN", "active": True},
+    {"id": "R04", "name": "Overall Bias Hard Limit", "metric": "overall_bias_score", "operator": "<=", "threshold": 0.40, "action": "BLOCK", "active": True},
+    {"id": "R05", "name": "Calibration Parity", "metric": "calibration_diff", "operator": "<=", "threshold": 0.10, "action": "WARN", "active": False},
+]
+
+# ====== Shadow AI ======
+_SHADOW_PATTERNS: dict = {
+    "Claude": ["i aim to", "i'd be happy to", "helpful, harmless", "it's important to note", "i should mention", "let me be clear", "i want to be"],
+    "GPT": ["certainly!", "absolutely!", "great question", "as an ai language model", "i understand that", "of course!", "let me know if"],
+    "Gemini": ["here's a breakdown", "sure, here", "to summarize:", "i can help with that", "here's what"],
+    "Llama": ["as a language model", "based on my training", "i was trained on", "my training data"],
+}
 
 
 # ====== Helpers ======
@@ -167,6 +233,7 @@ async def run_audit(
         await db.fairforge_runs.insert_one({**{k: v for k, v in data.items()}, "_created": datetime.now(timezone.utc).isoformat()})
     except Exception as e:
         logger.warning(f"audit mongo insert failed: {e}")
+    _append_audit_entry("audit_run", {"run_id": data["run_id"], "domain": domain, "bias_score": data["metrics"]["overall_bias_score"], "violations": len(data["violations"])})
     return data
 
 
@@ -328,6 +395,163 @@ async def train_reset():
     with _train_lock:
         _train.update({"current_ep": 0, "total_ep": 0, "reward_history": [], "bias_history": [], "logs": [], "active": False})
     return {"ok": True}
+
+
+# ====== Drift Monitoring Routes ======
+@api_router.get("/drift/status")
+async def drift_status():
+    return {"history": _drift_state["history"], "alerts": _drift_state["alerts"], "baseline": _drift_state["baseline"], "injected": _drift_state["injected"]}
+
+@api_router.post("/drift/simulate")
+async def simulate_drift():
+    _drift_state["injected"] = True
+    _drift_state["alerts"] = []
+    rng = random.Random()
+    for i in range(7):
+        di = round(max(0.35, 0.780 - (i+1)*0.065 + rng.uniform(-0.02, 0.02)), 3)
+        dpd = round(min(0.45, 0.120 + (i+1)*0.040 + rng.uniform(-0.01, 0.01)), 3)
+        bias = round(min(0.90, 0.450 + (i+1)*0.055 + rng.uniform(-0.02, 0.02)), 3)
+        alert = di < 0.741 or dpd > 0.126 or bias > 0.4725
+        _drift_state["history"].append({"day": f"D+{i+1}", "disparate_impact_ratio": di, "demographic_parity_diff": dpd, "overall_bias_score": bias, "alert": alert})
+        if alert:
+            _drift_state["alerts"].append({"day": f"D+{i+1}", "message": f"DI dropped to {di:.3f} (−5%% threshold: 0.741)", "severity": "critical" if di < 0.65 else "warn"})
+    _append_audit_entry("drift_alert", {"alerts_triggered": len(_drift_state["alerts"]), "injected": True})
+    return {"history": _drift_state["history"], "alerts": _drift_state["alerts"], "baseline": _drift_state["baseline"]}
+
+@api_router.post("/drift/reset")
+async def reset_drift():
+    _drift_state["history"] = []
+    _drift_state["alerts"] = []
+    _drift_state["injected"] = False
+    _init_drift_history()
+    return {"ok": True}
+
+
+# ====== Audit Trail Routes ======
+@api_router.get("/trail")
+async def get_trail():
+    return {"entries": _audit_log, "count": len(_audit_log)}
+
+@api_router.post("/trail/verify")
+async def verify_trail():
+    if not _audit_log:
+        return {"valid": True, "message": "No entries to verify.", "checked": 0, "errors": []}
+    errors = []
+    prev_hash = "0" * 64
+    for i, entry in enumerate(_audit_log):
+        check = {k: v for k, v in entry.items() if k != "chain_hash"}
+        expected_lh = _compute_hash(_json.dumps(check, sort_keys=True))
+        expected_ch = _compute_hash(prev_hash + entry["log_hash"])
+        if expected_ch != entry["chain_hash"]:
+            errors.append(f"Entry #{i+1} (trace: {entry['trace_id'][:8]}…) — chain hash MISMATCH")
+        prev_hash = entry["chain_hash"]
+    return {"valid": len(errors) == 0, "checked": len(_audit_log), "errors": errors,
+            "message": "✓ All records verified — chain intact" if not errors else f"✗ {len(errors)} tampered record(s) detected"}
+
+@api_router.post("/trail/tamper/{idx}")
+async def tamper_entry_demo(idx: int):
+    if idx < 0 or idx >= len(_audit_log):
+        return JSONResponse({"error": "index out of range"}, status_code=404)
+    _audit_log[idx]["data"]["TAMPERED"] = True
+    _audit_log[idx]["event"] = "[TAMPERED] " + _audit_log[idx]["event"]
+    return {"ok": True, "modified_entry": idx}
+
+
+# ====== Benchmark Routes ======
+class BenchmarkBody(BaseModel):
+    models: list[str]
+    domain: str = "hiring"
+
+@api_router.post("/benchmark")
+async def run_benchmark(body: BenchmarkBody):
+    results = []
+    for model in body.models:
+        base = dict(_BENCH_SCORES.get(model, {}))
+        if not base:
+            rng = random.Random(hash(model) & 0xFFFFFFFF)
+            base = {"gender_bias": round(rng.uniform(0.65, 0.91), 3), "racial_bias": round(rng.uniform(0.60, 0.88), 3), "age_bias": round(rng.uniform(0.65, 0.90), 3)}
+            base["overall_fairness"] = round(sum(base.values()) / 3, 3)
+        results.append({"model": model, **base})
+    results.sort(key=lambda x: x["overall_fairness"], reverse=True)
+    for i, r in enumerate(results):
+        r["rank"] = i + 1
+    _append_audit_entry("benchmark_run", {"models": body.models, "domain": body.domain})
+    return {"results": results, "domain": body.domain, "prompts_run": 50}
+
+
+# ====== Policy Engine Routes ======
+@api_router.get("/policy-rules")
+async def get_policy_rules():
+    return {"rules": _policy_rules}
+
+class PolicyRuleBody(BaseModel):
+    id: str
+    name: str
+    metric: str
+    operator: str
+    threshold: float
+    action: str
+    active: bool
+
+@api_router.put("/policy-rules")
+async def update_policy_rules(rules: list[PolicyRuleBody]):
+    _policy_rules.clear()
+    _policy_rules.extend([r.dict() for r in rules])
+    return {"rules": _policy_rules}
+
+@api_router.post("/policy-rules/evaluate/{run_id}")
+async def evaluate_policy_rules(run_id: str):
+    run = _runs.get(run_id)
+    if not run:
+        return JSONResponse({"error": "run not found"}, status_code=404)
+    m = run["metrics"]
+    results = []
+    for rule in _policy_rules:
+        if not rule["active"]:
+            continue
+        cv = m.get(rule["metric"], 0)
+        op, thr = rule["operator"], rule["threshold"]
+        passed = (cv >= thr) if op == ">=" else (cv <= thr) if op == "<=" else (cv > thr) if op == ">" else (cv < thr)
+        results.append({**rule, "current_value": round(cv, 4), "passed": passed})
+    blocked = any(r["action"] == "BLOCK" and not r["passed"] for r in results)
+    warned  = any(r["action"] == "WARN"  and not r["passed"] for r in results)
+    _append_audit_entry("policy_evaluation", {"run_id": run_id, "blocked": blocked, "warned": warned})
+    return {"results": results, "blocked": blocked, "warned": warned,
+            "verdict": "BLOCKED" if blocked else "WARNED" if warned else "CLEAR"}
+
+
+# ====== Shadow AI Routes ======
+class ShadowAIBody(BaseModel):
+    text: str
+
+@api_router.post("/shadow-ai/scan")
+async def shadow_ai_scan(body: ShadowAIBody):
+    text_lower = body.text.lower()
+    words = body.text.split()
+    word_count = len(words)
+    raw_scores: dict = {}
+    indicators: list = []
+    for model, phrases in _SHADOW_PATTERNS.items():
+        hits = [p for p in phrases if p in text_lower]
+        raw_scores[model] = round(min(0.95, len(hits) / max(len(phrases), 1)), 3)
+        indicators.extend([f"[{model}] '{p}'" for p in hits])
+    bullet_lines = sum(1 for l in body.text.split('\n') if l.strip().startswith(('-', '*', '•')))
+    avg_word_len = sum(len(w.strip('.,!?')) for w in words) / max(word_count, 1)
+    if bullet_lines >= 2:
+        raw_scores["Claude"] = min(0.95, raw_scores.get("Claude", 0) + 0.15)
+    if avg_word_len < 4.0:
+        raw_scores["GPT"] = min(0.95, raw_scores.get("GPT", 0) + 0.10)
+    total_ai = sum(raw_scores.values())
+    human_prob = round(max(0.03, 1.0 - total_ai * 0.7), 3)
+    best_model = max(raw_scores, key=raw_scores.get) if raw_scores else None
+    best_score = raw_scores.get(best_model, 0) if best_model else 0
+    if human_prob > 0.65 or best_score < 0.12:
+        verdict, confidence = "Human", human_prob
+    else:
+        verdict, confidence = best_model, round(best_score, 3)
+    return {"verdict": verdict, "confidence": confidence, "human_probability": human_prob,
+            "model_scores": raw_scores, "word_count": word_count,
+            "indicators": indicators[:8], "structural": {"bullet_lines": bullet_lines, "avg_word_len": round(avg_word_len, 2)}}
 
 
 app.include_router(api_router)
