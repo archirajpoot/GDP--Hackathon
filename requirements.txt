@@ -11,3 +11,5 @@ firebase-admin==6.4.0
 python-multipart==0.0.9
 gymnasium==0.29.1
 stable-baselines3==2.2.1
+motor==3.3.2
+python-dotenv==1.0.1
