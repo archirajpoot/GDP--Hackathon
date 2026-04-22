@@ -82,3 +82,103 @@ fairforge/
 ├── reports/                 # Output directory for accessible compliance PDFs
 ├── Dockerfile               # Production container configuration
 └── requirements.txt         # Dependency manifest
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              USER JOURNEY (Top Layer)                               │
+│                                                                                     │
+│   ┌──────────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐                │
+│   │  UPLOAD  │ ───▶ │  AUDIT   │ ───▶ │ MITIGATE │ ───▶ │  EXPORT  │              │
+│   │  Model/  │      │ Fairness │      │   Fix    │      │  Report  │                │
+│   │  Data    │      │  Check   │      │  Bias    │      │  (PDF)   │                │
+│   └────┬─────┘      └────┬─────┘      └────┬─────┘      └────┬─────┘                │
+│        │                 │                 │                 │                      │
+│        ▼                 ▼                 ▼                 ▼                      │
+│   • Auto‑detect      • 7 Metrics       • One‑Click       • EU AI Act                │
+│     schema           • Intersectional    (Reweight,       • Audit Logs              │
+│   • Protected          Heatmap           Drop Proxy,      • Dataset                 │
+│     attributes       • Violations        Threshold)         Export                  │
+│                        Panel            • PPO RL                                    │
+│                                          Training                                   │
+│                                                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│                    UNDER‑THE‑HOOD ARCHITECTURE (Bottom Layer)                       │
+│                                                                                     │
+│   ┌─────────────────────────────────────────────────────────────────────────────┐   │
+│   │                           FRONTEND (User Interface)                         │   │
+│   │                    Tailwind CSS  │  Plotly.js  │  Glassmorphism             │   |
+│   └───────────────────────────────────────┬─────────────────────────────────────┘   │
+│                                           │                                         │
+│                                           ▼                                         │
+│   ┌─────────────────────────────────────────────────────────────────────────────┐   │
+│   │                            BACKEND (FastAPI)                                │   │
+│   │          PyTorch  │  Scikit‑learn  │  Fairness Metrics Engine               │   │
+│   └───────┬───────────────────────────────┬───────────────────────────────┬─────┘   │
+│           │                               │                               │         │
+│           ▼                               ▼                               ▼         │
+│   ┌───────────────────┐       ┌───────────────────┐       ┌───────────────────┐     │
+│   │   RL ENGINE       │       │   XAI ENGINE      │       │   COMPLIANCE      │     │
+│   │                   │       │                   │       │                   │     │
+│   │ • Stable‑         │       │ • Gemini API      │       │ • Report          │     │
+│   │   Baselines3 PPO  │       │ • Vertex AI       │       │   Generator       │     │
+│   │ • Gymnasium Env   │       │ • Counterfactual  │       │ • Audit Trail     │     │
+│   │                   │       │   What‑If         │       │   (Hash Chain)    │     │
+│   │ Reward Function:  │       │ • Plain‑English   │       │                   │     │
+│   │ α·Acc − β·|DI−1|  │       │   Explanations    │       │                   │     │
+│   │      − γ·SPD      │       │                   │       │                   │     │
+│   └───────────────────┘       └───────────────────┘       └───────────────────┘     │
+│                                                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│                          📊 RESULTS & IMPACT                                       │
+│                                                                                      │
+│   Disparate Impact:  0.54 ───────────────────────────────▶ 0.89  (+65%) ✅          │
+│   Statistical Parity: 0.23 ───────────────────────────────▶ 0.04  (−83%) ✅         │
+│   Accuracy Trade‑off: 87% ────────────────────────────────▶ 84%   (−3%)             │
+│                                                                                      │
+│    ⏱️ Full workflow (upload → report): ~5 minutes (excluding training time)         │
+│                                                                                      │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+        🧑‍💻 Data Scientist        📋 Compliance Officer        💼 Business Stakeholder
+
+                        ┌────────────────────────────────────────┐
+                        │         FAIRFORGE ARENA                │
+                        │                                        │
+                        │  🔍 DATA & MODEL AUDIT                 │
+                        │  • Upload Dataset / Model              │
+                        │  • Auto-Detect Attributes              │
+                        │  • Detect Proxy Variables              │
+                        │  • Compute Fairness Metrics            │
+                        │  • Intersectional Analysis             │
+                        │                                        │
+                        │  🚩 MONITORING & FLAGGING              │
+                        │  • Flag High-Risk Bias                 │
+                        │  • Generate Bias Alerts                │
+                        │  • Stress Testing (Edge Cases)         │
+                        │  • Continuous Monitoring               │
+                        │                                        │
+                        │  🔧 MITIGATION (RL-BASED)              │
+                        │  • Apply Bias Fixes                    │
+                        │  • RL Training (PPO)                   │
+                        │  • Threshold Optimization              │
+                        │  • Compare Model Versions              │
+                        │                                        │
+                        │  🧠 EXPLAINABILITY (XAI)               │
+                        │  • Gemini Chat Assistant               │
+                        │  • Counterfactual Analysis             │
+                        │  • Explain Decisions (Plain English)   │
+                        │                                        │
+                        │  📄 COMPLIANCE & REPORTING             │
+                        │  • EU AI Act Reports                   │
+                        │  • Audit Trail & Logs                  │
+                        │  • Risk Documentation                  │
+                        │  • Export Reports (PDF)                │
+                        │                                        │
+                        └────────────────────────────────────────┘
+
+                                   ⚙️ System (Automated Engine)
