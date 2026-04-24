@@ -435,7 +435,7 @@ FOUNDATION v3.1    SCALE v4.0          ENTERPRISE v5.0     GLOBAL PLATFORM
 
 This project was developed for the **Google Developer Program — Hack2Skill** and **Google Solution Challenge 2026**.
 
-Open for collaboration — feel free to ⭐ star, 🍴 fork, and contribute!
+Open for visitors — feel free to ⭐ star.
 
 ---
 
@@ -447,7 +447,7 @@ Open for collaboration — feel free to ⭐ star, 🍴 fork, and contribute!
 
 *FairForge Arena — Train Bias Out. Build Trust In.*
 
-[![Stars](https://img.shields.io/github/stars/AbhishekGupta0164/FairForge-Arena?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon)
-[![Fork](https://img.shields.io/github/forks/AbhishekGupta0164/FairForge-Arena?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon/fork)
+[![Stars](https://img.shields.io/github/stars/AbhishekGupta0164/FairForge-Arena?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon.git)
+[![Fork](https://img.shields.io/github/forks/AbhishekGupta0164/FairForge-Arena?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon/forks)
 
 </div>
