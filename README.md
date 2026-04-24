@@ -238,8 +238,9 @@ graph TB
     CR --> GCS
     CR --> FA
     CR --> VA
-    API --> DB
-    DB --> MDB & BDS & AT
+    API --> MDB
+    MDB --> AT
+    MDB --> BDS
 ```
 
 ### Data Flow Diagram
@@ -252,7 +253,7 @@ graph TB
               ┌───────────────────────────────┼───────────────────────────────┐
               ▼                               ▼                               ▼
    ┌──────────────────────┐     ┌──────────────────────┐    ┌──────────────────────┐
-   │   🔍 DATA & MODEL   │     │ 🚩 MONITORING &      │    │  📄 COMPLIANCE &     │
+   │   🔍 DATA & MODEL    │    │ 🚩 MONITORING &      │    │  📄 COMPLIANCE &    │
    │        AUDIT         │    │      FLAGGING         │    │     REPORTING        │
    │                      │    │                       │    │                      │
    │ • Upload Dataset     │    │ • Flag High-Risk Bias │    │ • EU AI Act Reports  │
@@ -267,9 +268,9 @@ graph TB
               ┌───────────────────────────────┬───────────────────────────────┐
               ▼                               ▼                               ▼
    ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
-   │  🔧 MITIGATION       │    │  🧠 EXPLAINABILITY   │    │  📊 LLM BENCHMARK    │
+   │  🔧 MITIGATION       │    │  🧠 EXPLAINABILITY  │    │  📊 LLM BENCHMARK    │
    │     (RL-BASED)       │    │       (XAI)          │    │                      │
-   │                      │    │                       │    │ • GPT-4o             │
+   │                      │    │                      │    │ • GPT-4o             │
    │ • Apply Bias Fixes   │    │ • Gemini Chat Bot    │    │ • Claude 3.5 Sonnet  │
    │ • RL Training (PPO)  │    │ • Counterfactual     │    │ • Gemini 1.5 Pro     │
    │ • Threshold Optimize │    │ • Plain-English Exp. │    │ • Llama 3.1          │
@@ -446,6 +447,7 @@ Open for visitors — feel free to ⭐ star.
 **Made with ❤️ and a commitment to fairer AI**
 
 ### Team MASSIVE-X
+### 👑 Team Leader | [AbhishekGupta0164](https://github.com/AbhishekGupta0164) |
 
 *FairForge Arena — Train Bias Out. Build Trust In.*
 
