@@ -235,7 +235,9 @@ graph TB
     FM --> XAI
     API --> COMP
     RL & XAI & COMP --> GCP
-    GCP --> CR & GCS & FA & VA
+    CR --> GCS
+    CR --> FA
+    CR --> VA
     API --> DB
     DB --> MDB & BDS & AT
 ```
@@ -447,7 +449,7 @@ Open for visitors — feel free to ⭐ star.
 
 *FairForge Arena — Train Bias Out. Build Trust In.*
 
-[![Stars](https://img.shields.io/github/stars/AbhishekGupta0164/FairForge-Arena?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon.git)
-[![Fork](https://img.shields.io/github/forks/AbhishekGupta0164/FairForge-Arena?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon/forks)
+[![Stars](https://img.shields.io/github/stars/AbhishekGupta0164/GDP--Hackathon?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon)
+[![Fork](https://img.shields.io/github/forks/AbhishekGupta0164/GDP--Hackathon?style=social)](https://github.com/AbhishekGupta0164/GDP--Hackathon/fork)
 
 </div>
