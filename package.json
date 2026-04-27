@@ -1,0 +1,11 @@
+{
+  "name": "gdp-hack2skill",
+  "version": "1.0.0",
+  "description": "FairForge Arena",
+  "main": "backend/main.py",
+  "scripts": {
+    "dev": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload"
+  },
+  "author": "",
+  "license": "ISC"
+}
