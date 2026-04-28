@@ -36,6 +36,11 @@
 
 <br/>
 
+> [!NOTE]
+> **☁️ Deployment Notice** — Due to a temporary Google Cloud billing issue, FairForge Arena is deployed on **Vercel** for fast and reliable access. It is built with a cloud-native architecture and is **fully ready for scalable deployment on Google Cloud (Cloud Run + Vertex AI)**.
+
+<br/>
+
 [![Measure](https://img.shields.io/badge/1-MEASURE-blueviolet?style=flat-square&labelColor=1a1a2e)](#-the-fairforge-workflow)
 [![Flag](https://img.shields.io/badge/2-FLAG-red?style=flat-square&labelColor=1a1a2e)](#-the-fairforge-workflow)
 [![Fix](https://img.shields.io/badge/3-FIX-green?style=flat-square&labelColor=1a1a2e)](#-the-fairforge-workflow)
