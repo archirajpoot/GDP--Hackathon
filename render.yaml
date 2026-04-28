@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: fairforge-arena
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: MONGO_URL
+        value: "" # Optional: Add your MongoDB URL here if needed
