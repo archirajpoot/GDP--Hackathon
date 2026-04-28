@@ -1,0 +1,149 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Lint & basic sanity checks
+  # ─────────────────────────────────────────────
+  lint:
+    name: 🔍 Lint & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flake8 pyflakes
+
+      - name: Lint Python files
+        run: |
+          flake8 backend/main.py api/index.py \
+            --max-line-length=120 \
+            --ignore=E501,W503,E302,E303 \
+            --statistics
+        continue-on-error: true   # warn-only; don't block deploy
+
+      - name: Validate vercel.json
+        run: |
+          python -c "import json; json.load(open('vercel.json')); print('vercel.json ✅ valid')"
+
+  # ─────────────────────────────────────────────
+  # Job 2: Preview deploy (PRs only)
+  # ─────────────────────────────────────────────
+  preview:
+    name: 🚀 Deploy Preview
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment (Preview)
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (Preview)
+        id: preview_deploy
+        run: |
+          PREVIEW_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Comment Preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = '${{ steps.preview_deploy.outputs.preview_url }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🚀 Vercel Preview Deployment\n\n✅ Your preview is live at: **${previewUrl}**\n\n> Deployed from commit \`${context.sha.slice(0,7)}\``
+            });
+
+  # ─────────────────────────────────────────────
+  # Job 3: Production deploy (main/master only)
+  # ─────────────────────────────────────────────
+  production:
+    name: 🌐 Deploy Production
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment (Production)
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (Production)
+        id: prod_deploy
+        run: |
+          PROD_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
+
+      - name: Output Production URL
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  ✅ FairForge Arena is live!"
+          echo "  🌐 URL: ${{ steps.prod_deploy.outputs.prod_url }}"
+          echo "  📦 Commit: ${{ github.sha }}"
+          echo "  🕐 Deployed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Create GitHub Deployment Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              auto_merge: false,
+              required_contexts: [],
+              description: 'Vercel Production Deployment'
+            });
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.id,
+              state: 'success',
+              environment_url: '${{ steps.prod_deploy.outputs.prod_url }}',
+              description: 'Deployed successfully to Vercel'
+            });

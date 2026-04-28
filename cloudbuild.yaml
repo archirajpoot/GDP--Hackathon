@@ -1,28 +1,30 @@
-steps:
-  # Build the container image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/fairforge-arena', '.']
-
-  # Push the container image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/fairforge-arena']
-
-  # Deploy container image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'fairforge-arena'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/fairforge-arena'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--port'
-      - '8080'
-
-images:
-  - 'gcr.io/$PROJECT_ID/fairforge-arena'
+# ─────────────────────────────────────────────────────────────
+# Google Cloud Run Pipeline (ARCHIVED)
+# ─────────────────────────────────────────────────────────────
+# This file was the original Cloud Build pipeline for GCR deployment.
+# The project has been migrated to Vercel.
+# See .github/workflows/vercel-deploy.yml for the active pipeline.
+# ─────────────────────────────────────────────────────────────
+#
+# steps:
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/fairforge-arena', '.']
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/fairforge-arena']
+#   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+#     entrypoint: gcloud
+#     args:
+#       - 'run'
+#       - 'deploy'
+#       - 'fairforge-arena'
+#       - '--image'
+#       - 'gcr.io/$PROJECT_ID/fairforge-arena'
+#       - '--region'
+#       - 'us-central1'
+#       - '--platform'
+#       - 'managed'
+#       - '--allow-unauthenticated'
+#       - '--port'
+#       - '8080'
+# images:
+#   - 'gcr.io/$PROJECT_ID/fairforge-arena'

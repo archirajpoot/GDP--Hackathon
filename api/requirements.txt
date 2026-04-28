@@ -1,0 +1,13 @@
+# Vercel Serverless – slim requirements
+# Only packages actually imported by backend/main.py are listed here.
+# Heavy ML libs (torch, sklearn, gymnasium, stable-baselines3) are NOT
+# imported in main.py, so they are excluded to stay inside Vercel's 50 MB
+# lambda size limit.  Keep requirements.txt for Docker / local dev.
+
+fastapi==0.109.2
+uvicorn==0.27.0.post1
+pydantic==2.6.1
+motor==3.3.2
+python-multipart==0.0.9
+python-dotenv==1.0.1
+starlette==0.36.3

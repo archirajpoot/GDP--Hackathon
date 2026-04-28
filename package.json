@@ -1,10 +1,16 @@
 {
-  "name": "gdp-hack2skill",
+  "name": "fairforge-arena",
   "version": "1.0.0",
-  "description": "FairForge Arena",
-  "main": "backend/main.py",
+  "description": "FairForge Arena – AI Fairness Auditing Platform",
   "scripts": {
-    "dev": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload"
+    "dev": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel",
+    "vercel:link": "vercel link",
+    "vercel:env": "vercel env pull .env.local"
+  },
+  "engines": {
+    "node": ">=18.x"
   },
   "author": "",
   "license": "ISC"
